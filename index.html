@@ -513,20 +513,26 @@ input::placeholder{color:var(--t3);font-weight:400}
   <div id="set-theme">
     <p class="stitle" style="margin-top:4px">APP 主題</p>
     <div id="theme-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-    <p class="stitle">☁️ Google 雲端同步</p>
+    <p class="stitle">☁️ Google Sheets 雲端同步</p>
     <div class="card" style="padding:13px 14px">
-      <div style="font-size:12px;color:var(--t2);line-height:1.9;font-weight:600;margin-bottom:10px;background:var(--gl);border-radius:var(--rx);padding:8px 10px;color:var(--gr)">
-        ✅ 已連接 Google Sheets 雲端同步<br>
-        每筆記帳自動寫入試算表，可直接在 Google Sheets 查看
+      <div class="fg">
+        <label class="fl">📋 Apps Script 網址 <span style="color:var(--rd);font-weight:800">*必填</span></label>
+        <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/xxx/exec" style="font-size:12px"/>
+        <div style="display:flex;gap:7px;margin-top:7px">
+          <button class="btn bp bsm" id="btn-save-gas-url">💾 儲存網址</button>
+          <span id="gas-url-status" style="font-size:11px;align-self:center;font-weight:700"></span>
+        </div>
       </div>
-      <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button class="btn bp bsm" id="btn-gas-push">⬆️ 上傳資料至雲端</button>
-        <button class="btn bg2 bsm" id="btn-gas-pull">⬇️ 從雲端下載資料</button>
-      </div>
-      <div id="gas-status" style="margin-top:8px;font-size:11px;color:var(--t3);font-weight:600"></div>
       <div class="divider"></div>
-      <div style="font-size:10.5px;color:var(--t3);font-weight:600;line-height:1.7">
-        💡 換新裝置：設定 → 按「⬇️ 從雲端下載資料」<br>⚠️ 下載功能需要更新 Apps Script（見說明）
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn bp bsm" id="btn-gas-push">⬆️ 上傳至 Google Sheets</button>
+        <button class="btn bg2 bsm" id="btn-gas-pull">⬇️ 從雲端下載</button>
+      </div>
+      <div id="gas-status" style="font-size:11px;color:var(--t3);font-weight:600"></div>
+      <div class="divider"></div>
+      <div style="font-size:10.5px;color:var(--t3);font-weight:600;line-height:1.8">
+        💡 如何取得網址：Apps Script → 部署 → 管理部署作業 → 複製網路應用程式網址<br>
+        💡 換新裝置：填入同一個網址 → 按「⬇️ 從雲端下載」
       </div>
     </div>
   </div>
@@ -711,53 +717,82 @@ document.getElementById('btn-cal').addEventListener('click',function(){gotoPage(
 document.getElementById('link-all').addEventListener('click',function(){gotoPage('search');});
 
 // ── Google Apps Script 雲端同步 ──────────────────────────────
-var GAS_URL='https://script.google.com/macros/s/AKfycbyyvxmkvP0z_lIm8Dtl6vkgODtoGV8x0KVi8mOWX4zJ1U5bifXYXU9PyYnj5KNrg6TBqA/exec';
+var GAS_URL=lsGet('gas_url','')||'';
 
 function gasStatus(msg,ok){
   var el=document.getElementById('gas-status');
   if(el){el.textContent=msg;el.style.color=ok===false?'var(--rd)':ok===true?'var(--gr)':'var(--t3)';}
 }
 
+function gasRequest(params, cb){
+  // JSONP — works in all environments, no CORS needed
+  var cbName='_gc'+Date.now();
+  var timer=setTimeout(function(){
+    cleanup();
+    cb(new Error('Timeout'),null);
+  },15000);
+  function cleanup(){
+    clearTimeout(timer);
+    if(window[cbName])delete window[cbName];
+    var s=document.getElementById('_gscript');
+    if(s)s.remove();
+  }
+  window[cbName]=function(data){
+    cleanup();
+    cb(null,data);
+  };
+  var qs='callback='+cbName;
+  Object.keys(params).forEach(function(k){
+    qs+='&'+encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  });
+  var s=document.createElement('script');
+  s.id='_gscript';
+  s.onerror=function(){
+    cleanup();
+    cb(new Error('Script load failed — 請確認 Apps Script 網址並已部署'),null);
+  };
+  s.src=GAS_URL+'?'+qs;
+  document.head.appendChild(s);
+}
+
 function pushToGAS(){
+  GAS_URL=lsGet('gas_url','')||GAS_URL;
+  if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
   saveAll();
-  var payload=JSON.stringify({currencies:currencies,wallets:wallets,cats:cats,projects:projects,fixed:fixedItems,expenses:expenses,nextId:nextId,theme:activeThemeIdx,ts:Date.now()});
+  var payload=JSON.stringify({
+    currencies:currencies,wallets:wallets,cats:cats,
+    projects:projects,fixed:fixedItems,expenses:expenses,
+    nextId:nextId,theme:activeThemeIdx,ts:Date.now()
+  });
   showToast('☁️ 上傳中…');gasStatus('上傳中…');
-  // Use no-cors + form-data to bypass CORS (GAS accepts form posts)
-  var form=new FormData();form.append('data',payload);
-  fetch(GAS_URL,{method:'POST',mode:'no-cors',body:form})
-  .then(function(){
-    showToast('✅ 已上傳至 Google 雲端！');
-    document.getElementById('sync-badge').textContent='剛剛';
-    lsSet('gas_last_push',Date.now());
-    gasStatus('✅ 上傳成功 '+new Date().toLocaleTimeString(),true);
-  })
-  .catch(function(e){
-    showToast('❌ 網路錯誤，資料已存本機');
-    gasStatus('❌ '+e.message,false);
+  gasRequest({action:'save',data:payload},function(err,res){
+    if(err){
+      showToast('❌ 上傳失敗，資料已存本機');
+      gasStatus('❌ 請確認 Apps Script 已部署（'+err.message+'）',false);
+      return;
+    }
+    if(res&&res.ok){
+      showToast('✅ 已同步至 Google Sheets！');
+      document.getElementById('sync-badge').textContent='剛剛';
+      lsSet('gas_last_push',Date.now());
+      gasStatus('✅ 上傳成功 '+new Date().toLocaleTimeString(),true);
+    } else {
+      showToast('⚠️ 上傳失敗：'+(res&&res.msg||'未知'));
+      gasStatus('❌ '+(res&&res.msg||'失敗'),false);
+    }
   });
 }
 
 function pullFromGAS(){
+  GAS_URL=lsGet('gas_url','')||GAS_URL;
+  if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
   showToast('⬇️ 下載中…');gasStatus('下載中…');
-  // Use JSONP-style approach via script tag to bypass CORS on GET
-  var cbName='_gasCallback'+Date.now();
-  var done=false;
-  var timer=setTimeout(function(){
-    if(done)return;done=true;
-    // Fallback: try fetch with no-cors (will get opaque response, try anyway)
-    fetch(GAS_URL,{method:'POST',mode:'no-cors',body:(function(){var f=new FormData();f.append('action','get');return f;})()})
-    .then(function(){
-      gasStatus('⚠️ 無法讀取回應，請確認 Apps Script 已正確部署',false);
-      showToast('⚠️ 請確認 Apps Script 版本是最新的');
-    }).catch(function(){});
-    if(window[cbName])delete window[cbName];
-    var s=document.getElementById('gas-jsonp-script');if(s)s.remove();
-  },8000);
-
-  window[cbName]=function(d){
-    done=true;clearTimeout(timer);
-    delete window[cbName];
-    var s=document.getElementById('gas-jsonp-script');if(s)s.remove();
+  gasRequest({action:'load'},function(err,d){
+    if(err){
+      showToast('❌ 下載失敗，請確認 Apps Script 已部署');
+      gasStatus('❌ 請確認 Apps Script 網址與部署（'+err.message+'）',false);
+      return;
+    }
     if(d&&d.expenses){
       if(d.currencies)currencies=d.currencies;
       if(d.wallets)wallets=d.wallets;
@@ -772,23 +807,13 @@ function pullFromGAS(){
       gasStatus('✅ 下載成功 '+new Date().toLocaleTimeString(),true);
     } else {
       showToast('⚠️ 雲端尚無資料，請先上傳一次');
-      gasStatus('雲端尚無資料，請先按「上傳」',false);
+      gasStatus('雲端尚無資料，請先按「⬆️ 上傳」',false);
     }
-  };
-  // JSONP request
-  var script=document.createElement('script');
-  script.id='gas-jsonp-script';
-  script.src=GAS_URL+'?callback='+cbName+'&t='+Date.now();
-  script.onerror=function(){
-    if(done)return;done=true;clearTimeout(timer);
-    gasStatus('❌ 載入失敗，請確認 Apps Script 網址正確',false);
-    showToast('❌ 無法連線，請確認網址');
-    if(window[cbName])delete window[cbName];
-  };
-  document.head.appendChild(script);
+  });
 }
-
 document.getElementById('btn-sync').addEventListener('click',function(){
+  GAS_URL=lsGet('gas_url','')||GAS_URL;
+  if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
   pushToGAS();
 });
 
@@ -1043,7 +1068,7 @@ function viewExp(id){
   var isIn=e.type==='income',amtStr=e.currency==='TWD'?'NT$'+e.amount.toLocaleString():e.currency+' '+e.amount.toLocaleString();
   document.getElementById('ov-exp-b').innerHTML='<div class="sg" style="margin-bottom:10px"><div class="sc"><div class="sl">日期</div><div style="font-size:12px;font-weight:700">'+e.date+'</div></div><div class="sc"><div class="sl">錢包</div><div style="font-size:12px;font-weight:700">'+e.wallet+'</div></div><div class="sc"><div class="sl">分類</div><div style="font-size:12px;font-weight:700">'+e.cat+'</div></div></div><div class="sc" style="margin-bottom:10px"><div class="sl">金額</div><div style="font-size:20px;font-weight:900;color:'+(isIn?'var(--gr)':'var(--rd)')+';">'+(isIn?'+':'-')+amtStr+'</div>'+(e.currency!=='TWD'?'<div style="font-size:11px;color:var(--t3);font-weight:600">≈ NT$'+e.twd.toLocaleString()+'</div>':'')+(e.billEdited?'<div class="bedit" style="display:inline-flex;margin-top:5px">📄 '+(e.billNote||'帳單已更新')+'</div>':'')+'</div>'+(e.note?'<div class="sc"><div class="sl">備註</div><div style="font-size:13px;font-weight:600">'+e.note+'</div></div>':'');
   document.getElementById('ov-edit').onclick=function(){closeOv('ov-exp');editExp(id);};
-  document.getElementById('ov-del').onclick=function(){showConfirm('🗑️','確定刪除？','「'+e.name+'」刪除後無法復原。',function(){expenses=expenses.filter(function(x){return x.id!==id;});saveAll();closeOv('ov-exp');renderHome();showToast('🗑️ 已刪除');});};
+  document.getElementById('ov-del').onclick=function(){showConfirm('🗑️','確定刪除？','「'+e.name+'」刪除後無法復原。',function(){expenses=expenses.filter(function(x){return x.id!==id;});saveAll();closeOv('ov-exp');renderHome();showToast('🗑️ 已刪除');setTimeout(function(){pushToGAS();},800);});};
   document.getElementById('ov-cls').onclick=function(){closeOv('ov-exp');};
   openOv('ov-exp');
 }
@@ -1202,6 +1227,8 @@ document.getElementById('submit-btn').addEventListener('click',function(){
   if(eid){for(var i=0;i<expenses.length;i++){if(expenses[i].id===parseInt(eid)){expenses[i]=obj;break;}}showToast('💾 已儲存修改');}
   else{expenses.unshift(obj);showToast('✅ 記帳成功！');}
   lsSet('nextId',nextId);saveAll();resetAdd();gotoPage('home');
+  // Auto-sync to cloud after saving
+  setTimeout(function(){pushToGAS();},800);
 });
 document.getElementById('cancel-btn').addEventListener('click',function(){resetAdd();gotoPage('home');});
 
@@ -1569,6 +1596,50 @@ function renderThemeCards(){
   // bind GAS buttons
   var bp=document.getElementById('btn-gas-push');if(bp)bp.onclick=pushToGAS;
   var bpl=document.getElementById('btn-gas-pull');if(bpl)bpl.onclick=pullFromGAS;
+  // load saved URL
+  var urlInp=document.getElementById('gas-url-input');
+  if(urlInp){
+    var savedUrl=lsGet('gas_url','');
+    urlInp.value=savedUrl;
+    var urlSt=document.getElementById('gas-url-status');
+    if(urlSt)urlSt.textContent=savedUrl?'✅ 已設定網址':'⚠️ 尚未設定 Apps Script 網址';
+    if(urlSt)urlSt.style.color=savedUrl?'var(--gr)':'var(--am)';
+  }
+  var saveUrlBtn=document.getElementById('btn-gas-save-url');
+  if(saveUrlBtn)saveUrlBtn.onclick=function(){
+    var url=(document.getElementById('gas-url-input').value||'').trim();
+    if(!url||url.indexOf('script.google.com')<0){
+      showToast('⚠️ 請輸入正確的 Apps Script 網址');
+      return;
+    }
+    GAS_URL=url;lsSet('gas_url',url);
+    var st=document.getElementById('gas-url-status');
+    if(st){st.textContent='✅ 網址已儲存！';st.style.color='var(--gr)';}
+    showToast('✅ Apps Script 網址已儲存');
+  };
+  // load saved URL
+  var urlInp=document.getElementById('gas-url-input');
+  if(urlInp){
+    urlInp.value=lsGet('gas_url','')||'';
+    var savedUrl=lsGet('gas_url','');
+    var urlStat=document.getElementById('gas-url-status');
+    if(urlStat)urlStat.textContent=savedUrl?'✅ 已設定網址':'⚠️ 尚未設定網址，無法同步';
+    if(urlStat)urlStat.style.color=savedUrl?'var(--gr)':'var(--am)';
+  }
+  // save URL button
+  var saveUrlBtn=document.getElementById('btn-save-gas-url');
+  if(saveUrlBtn){
+    saveUrlBtn.onclick=function(){
+      var v=(document.getElementById('gas-url-input').value||'').trim();
+      if(!v){showToast('⚠️ 請貼入 Apps Script 網址');return;}
+      if(!v.includes('script.google.com')){showToast('⚠️ 網址格式不正確');return;}
+      lsSet('gas_url',v);
+      GAS_URL=v;
+      var urlStat=document.getElementById('gas-url-status');
+      if(urlStat){urlStat.textContent='✅ 網址已儲存！';urlStat.style.color='var(--gr)';}
+      showToast('✅ 網址已儲存，可以開始同步！');
+    };
+  }
 }
 
 // WALLETS
