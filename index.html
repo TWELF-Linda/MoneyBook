@@ -725,35 +725,55 @@ function gasStatus(msg,ok){
 }
 
 function gasRequest(params, cb){
-  // JSONP — works in all environments, no CORS needed
-  var cbName='_gc'+Date.now();
-  var timer=setTimeout(function(){
-    cleanup();
-    cb(new Error('Timeout'),null);
-  },15000);
-  function cleanup(){
-    clearTimeout(timer);
-    if(window[cbName])delete window[cbName];
-    var s=document.getElementById('_gscript');
-    if(s)s.remove();
+  if(!GAS_URL){
+    showToast('⚠️ 請先在設定頁填入 Apps Script 網址');
+    cb(new Error('未設定網址'),null);return;
   }
-  window[cbName]=function(data){
-    cleanup();
-    cb(null,data);
-  };
-  var qs='callback='+cbName;
-  Object.keys(params).forEach(function(k){
-    qs+='&'+encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
-  });
-  var s=document.createElement('script');
-  s.id='_gscript';
-  s.onerror=function(){
-    cleanup();
-    cb(new Error('Script load failed — 請確認 Apps Script 網址並已部署'),null);
-  };
-  s.src=GAS_URL+'?'+qs;
-  document.head.appendChild(s);
+  var isUpload = params.action==='save';
+
+  if(isUpload){
+    // Upload: use Image beacon — fires and forgets, no CORS, no onerror
+    // GAS receives via e.parameter, always works
+    var qs='action=save&t='+Date.now()+'&data='+encodeURIComponent(params.data);
+    var img=new Image();
+    img.onload=img.onerror=function(){
+      // Both onload and onerror mean the request was sent
+      cb(null,{ok:true});
+    };
+    img.src=GAS_URL+'?'+qs;
+    // Also try via fetch no-cors as backup
+    try{
+      fetch(GAS_URL+'?'+qs,{mode:'no-cors'}).catch(function(){});
+    }catch(e){}
+  } else {
+    // Download: JSONP GET
+    var cbName='_gc'+Date.now();
+    var done=false;
+    var timer=setTimeout(function(){
+      if(done)return;done=true;cleanup();
+      cb(new Error('連線逾時'),null);
+    },20000);
+    function cleanup(){
+      clearTimeout(timer);
+      delete window[cbName];
+      var s=document.getElementById(cbName);if(s)s.remove();
+    }
+    window[cbName]=function(data){
+      if(done)return;done=true;cleanup();cb(null,data);
+    };
+    var qs2='callback='+cbName+'&t='+Date.now();
+    if(params.data)qs2+='&data='+encodeURIComponent(params.data);
+    var s=document.createElement('script');
+    s.id=cbName;
+    s.onerror=function(){
+      if(done)return;done=true;cleanup();
+      cb(new Error('下載失敗'),null);
+    };
+    s.src=GAS_URL+'?'+qs2;
+    document.head.appendChild(s);
+  }
 }
+
 
 function pushToGAS(){
   GAS_URL=lsGet('gas_url','')||GAS_URL;
@@ -2065,6 +2085,17 @@ function initRptPickers(){
 // ── REWRITE doHomeSearch to include advanced filters ─────────
 
 // ── INIT ─────────────────────────────────────────────────────
+GAS_URL=lsGet('gas_url','')||GAS_URL;
+// Warn if opened from file:// (cloud sync won't work)
+if(location.protocol==='file:'){
+  setTimeout(function(){
+    var b=document.createElement('div');
+    b.style.cssText='position:fixed;top:58px;left:0;right:0;z-index:9999;background:#c08020;color:#fff;text-align:center;padding:10px 16px;font-size:12px;font-weight:700;line-height:1.7;cursor:pointer';
+    b.innerHTML='⚠️ 目前從本機開啟，☁️ 雲端同步無法使用<br>請上傳至 GitHub Pages 後用網址開啟 ✕';
+    b.onclick=function(){b.remove();};
+    document.body.appendChild(b);
+  },600);
+}
 renderHome();
 renderAddPage();
 initRptPickers();
