@@ -726,41 +726,24 @@ function gasStatus(msg,ok){
 
 function gasRequest(params, cb){
   if(!GAS_URL){
-    showToast('\u26a0\ufe0f \u8acb\u5148\u5728\u8a2d\u5b9a\u9801\u586b\u5165 Apps Script \u7db2\u5740');
-    cb(new Error('\u672a\u8a2d\u5b9a\u7db2\u5740'),null);return;
+    showToast('⚠️ 請先在設定頁填入 Apps Script 網址');
+    cb(new Error('未設定網址'),null);return;
   }
 
   if(params.action==='save'){
-    var body=JSON.stringify({action:'save',data:params.data});
-    fetch(GAS_URL,{method:'POST',mode:'no-cors',body:body}).catch(function(){});
-    setTimeout(function(){
-      var cbName='_gc'+Date.now();
-      var done=false;
-      var timer=setTimeout(function(){
-        if(done)return;done=true;cleanup();
-        cb(null,{ok:true});
-      },15000);
-      function cleanup(){
-        clearTimeout(timer);
-        delete window[cbName];
-        var s=document.getElementById(cbName);if(s)s.remove();
-      }
-      window[cbName]=function(data){
-        if(done)return;done=true;cleanup();
-        cb(null,{ok:true});
-      };
-      var s=document.createElement('script');
-      s.id=cbName;
-      s.onerror=function(){if(done)return;done=true;cleanup();cb(null,{ok:true});};
-      s.src=GAS_URL+'?action=load&callback='+cbName+'&t='+Date.now();
-      document.head.appendChild(s);
-    },1500);
+    // Image Beacon GET — no CORS, works on all mobile browsers
+    var qs='action=save&t='+Date.now()+'&data='+encodeURIComponent(params.data);
+    var img=new Image();
+    img.onload=img.onerror=function(){ cb(null,{ok:true}); };
+    img.src=GAS_URL+'?'+qs;
+    try{ fetch(GAS_URL+'?'+qs,{mode:'no-cors'}).catch(function(){}); }catch(e){}
   } else {
+    // Download: JSONP GET
     var cbName='_gc'+Date.now();
     var done=false;
     var timer=setTimeout(function(){
       if(done)return;done=true;cleanup();
-      cb(new Error('\u9023\u7dab\u903e\u6642'),null);
+      cb(new Error('連線逾時'),null);
     },20000);
     function cleanup(){
       clearTimeout(timer);
@@ -774,13 +757,12 @@ function gasRequest(params, cb){
     s.id=cbName;
     s.onerror=function(){
       if(done)return;done=true;cleanup();
-      cb(new Error('\u4e0b\u8f09\u5931\u6557'),null);
+      cb(new Error('下載失敗'),null);
     };
     s.src=GAS_URL+'?action=load&callback='+cbName+'&t='+Date.now();
     document.head.appendChild(s);
   }
 }
-
 
 function saveGasUrl(){
   var v=(document.getElementById('gas-url-input').value||'').trim();
@@ -796,13 +778,14 @@ function pushToGAS(){
   GAS_URL=lsGet('gas_url','')||GAS_URL;
   if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
   saveAll();
+  // 壓縮欄位名稱縮短 URL，對應 GAS doGet save 解壓
   var payload=JSON.stringify({
-    expenses:expenses.map(function(ex){return{
-      date:ex.date||'',name:ex.name||'',cat:ex.cat||'',sub:ex.sub||'',
-      wallet:ex.wallet||'',proj:ex.proj||'',amount:ex.amount||0,
-      currency:ex.currency||'TWD',twd:ex.twd||0,type:ex.type||'expense',
-      note:ex.note||'',merchant:ex.merchant||''
-    };})
+    r:expenses.map(function(ex){return[
+      ex.date||'',ex.name||'',ex.cat||'',ex.sub||'',
+      ex.wallet||'',ex.proj||'',ex.amount||0,
+      ex.currency||'TWD',ex.twd||0,ex.type||'expense',
+      ex.note||'',ex.merchant||''
+    ];})
   });
   showToast('☁️ 上傳中…');gasStatus('上傳中…');
   gasRequest({action:'save',data:payload},function(err,res){
