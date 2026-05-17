@@ -15,7 +15,7 @@
     start_url:'.',display:'standalone',
     background_color:'#fdf6ee',theme_color:'#b85e28',
     description:'可愛的個人記帳APP',
-    icons:[{src:'data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23b85e28\'/><text y=\'.9em\' font-size=\'80\'>🌸</text></svg>',sizes:'192x192',type:'image/svg+xml'}]
+    icons:[{src:'data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' rx=\'20\' fill=\'%23b85e28\'/><text x=\'50\' y=\'54\' font-size=\'62\' text-anchor=\'middle\' dominant-baseline=\'middle\'>🌸</text></svg>',sizes:'192x192',type:'image/svg+xml'}]
   };
   var blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
   var url=URL.createObjectURL(blob);
@@ -54,6 +54,11 @@
 .t8{--bg:#efe8de;--sf:#faf5ee;--s2:#e0d0b8;--s3:#c8b090;--bd:#b89870;--bd2:#987848;--tx:#201000;--t2:#502808;--t3:#885028;--ac:#603010;--a2:#885028;--al:#dfc8a8;--af:#fff}
 .t9{--bg:#1a1510;--sf:#2a2018;--s2:#382818;--s3:#483820;--bd:#604028;--bd2:#805030;--tx:#f0e0c8;--t2:#c0a070;--t3:#987040;--ac:#c88028;--a2:#e0a040;--al:#482808;--af:#1a1510;--gr:#50c870;--gl:#182818;--rd:#f06060;--rl:#2a1010}
 .ta{--bg:#101018;--sf:#1e1c30;--s2:#2a2840;--s3:#3a3858;--bd:#484868;--bd2:#6868a0;--tx:#e0d8ff;--t2:#a098d8;--t3:#7060b0;--ac:#7848f8;--a2:#a070ff;--al:#302850;--af:#fff;--gr:#38d888;--gl:#0c2820;--rd:#f86868;--rl:#2a0c0c}
+
+
+.calc-btn{background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--rs);padding:14px 4px;font-size:17px;font-weight:700;cursor:pointer;color:var(--tx);transition:background .1s}
+.calc-btn:active{background:var(--s3)}
+.calc-op{background:var(--al);color:var(--ac)}
 
 body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;transition:background .3s,color .3s;min-height:100vh}
 .app{max-width:680px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
@@ -353,7 +358,7 @@ input::placeholder{color:var(--t3);font-weight:400}
   </div>
   <div class="fg"><label class="fl">📅 日期</label><input type="date" id="f-date"/></div>
   <div class="fr" style="margin-bottom:10px">
-    <div class="fg" style="flex:2;margin-bottom:0"><label class="fl">💰 金額</label><input type="number" id="f-amt" placeholder="0"/></div>
+    <div class="fg" style="flex:2;margin-bottom:0"><label class="fl">💰 金額</label><div style="display:flex;gap:6px;align-items:center"><input type="number" id="f-amt" placeholder="0" style="flex:1" inputmode="decimal"/><button type="button" onclick="openCalc()" style="background:var(--s3);border:none;border-radius:var(--rs);padding:8px 10px;font-size:18px;cursor:pointer;line-height:1">🖩</button></div></div>
     <div class="fg" style="flex:1.3;margin-bottom:0"><label class="fl">幣別</label><select id="f-cur"></select></div>
   </div>
   <div class="fxb" id="fxb" style="display:none">
@@ -508,7 +513,7 @@ input::placeholder{color:var(--t3);font-weight:400}
     <div class="tab" data-st="merchant" style="min-width:60px">🏪 商家</div>
   </div>
   <div style="margin-bottom:12px">
-    <button class="btn bg2 bsm" onclick="openOv('ov-merchant')">🏪 商家管理</button>
+
   </div>
   <div id="set-theme">
     <p class="stitle" style="margin-top:4px">APP 主題</p>
@@ -569,12 +574,43 @@ input::placeholder{color:var(--t3);font-weight:400}
 <div class="ov" id="ov-proj"><div class="modal"><div class="mh"></div><div class="mt" id="proj-mt">新增旅遊專案</div><div class="fg"><label class="fl">旗幟圖示</label><input type="text" id="pj-ico" placeholder="🇯🇵" style="width:62px"/></div><div class="fg"><label class="fl">專案名稱</label><input type="text" id="pj-name" placeholder="例：日本東京行"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">起始日</label><input type="date" id="pj-st"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">結束日</label><input type="date" id="pj-en"/></div></div><div class="fg"><label class="fl">預設幣別</label><select id="pj-cur"></select></div><div class="fg"><label class="fl">預算 (TWD)</label><input type="number" id="pj-bud" placeholder="25000"/></div><div class="mbtns"><button class="btn bp bfw" id="pj-save">✅ 儲存專案</button><button class="btn bg2" id="pj-cancel">取消</button></div><input type="hidden" id="pj-idx" value=""></div></div>
 <div class="ov" id="ov-wl"><div class="modal"><div class="mh"></div><div class="mt" id="wl-mt">新增錢包</div><div class="fg"><label class="fl">選擇圖示</label><div id="wl-icons" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px"></div></div><div class="fg"><label class="fl">錢包名稱</label><input type="text" id="wl-name" placeholder="例：旅遊現金"/></div><div class="mbtns"><button class="btn bp bfw" id="wl-save">✅ 儲存</button><button class="btn bg2" id="wl-cancel">取消</button></div><input type="hidden" id="wl-idx" value=""></div></div>
 <div class="ov" id="ov-cat"><div class="modal"><div class="mh"></div><div class="mt" id="cat-mt">新增分類</div><div class="fr" style="margin-bottom:10px"><div class="fg" style="width:65px;margin-bottom:0"><label class="fl">圖示</label><input type="text" id="ct-ico" placeholder="🍜"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">名稱</label><input type="text" id="ct-name" placeholder="餐飲"/></div><div class="fg" style="width:55px;margin-bottom:0"><label class="fl">顏色</label><input type="color" id="ct-color" value="#b85e28" style="height:36px;padding:2px"/></div></div><div class="fg"><label class="fl">子分類 <span style="font-weight:400;color:var(--t3)">(可新增/刪除/排序)</span></label><div id="sub-editor"></div><button class="btn bg2 bsm" style="margin-top:6px" id="btn-add-sub">＋ 新增子類別</button></div><div class="mbtns"><button class="btn bp bfw" id="cat-save">✅ 儲存分類</button><button class="btn bg2" id="cat-cancel">取消</button></div><input type="hidden" id="ct-idx" value=""></div></div>
-<div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fg"><label class="fl">分類</label><select id="fx-cat"></select></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
+<div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fg"><label class="fl">分類</label><select id="fx-cat" onchange="updateFxSub()"></select></div><div class="fg"><label class="fl">子分類</label><select id="fx-sub"></select></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
 <div class="ov" id="ov-cur"><div class="modal"><div class="mh"></div><div class="mt" id="cur-mt">新增幣別</div><div class="fg"><label class="fl">代碼</label><input type="text" id="cu-code" placeholder="AUD" style="width:80px"/></div><div class="fg"><label class="fl">名稱</label><input type="text" id="cu-name" placeholder="澳幣"/></div><div class="fg"><label class="fl">對 TWD 匯率</label><input type="number" id="cu-rate" placeholder="21.5" step="0.0001"/></div><div class="mbtns"><button class="btn bp bfw" id="cur-save">✅ 儲存</button><button class="btn bg2" id="cur-cancel">取消</button></div><input type="hidden" id="cu-idx" value=""></div></div>
 <div class="cov" id="cov"><div class="cbox"><div class="cico" id="c-ico">⚠️</div><div class="ctit" id="c-tit">確定嗎？</div><div class="cmsg" id="c-msg">此操作無法復原。</div><div style="display:flex;gap:8px"><button class="btn bd2 bfw" id="c-ok">確認</button><button class="btn bg2 bfw" id="c-cancel">取消</button></div></div></div>
 <div class="toast" id="toast-el"></div>
 
 <!-- FIXED PICK MODAL -->
+
+<div class="ov" id="ov-calc"><div class="modal" style="max-width:320px">
+  <div class="mt">🖩 計算機</div>
+  <div id="calc-display" style="background:var(--s2);border-radius:var(--rs);padding:12px 16px;font-size:22px;font-weight:800;text-align:right;margin-bottom:10px;min-height:52px;word-break:break-all;color:var(--tx)">0</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+    <button class="calc-btn" data-c="C" style="background:var(--rl);color:var(--rd);font-weight:800">C</button>
+    <button class="calc-btn" data-c="±">±</button>
+    <button class="calc-btn" data-c="%">%</button>
+    <button class="calc-btn calc-op" data-c="÷">÷</button>
+    <button class="calc-btn" data-c="7">7</button>
+    <button class="calc-btn" data-c="8">8</button>
+    <button class="calc-btn" data-c="9">9</button>
+    <button class="calc-btn calc-op" data-c="×">×</button>
+    <button class="calc-btn" data-c="4">4</button>
+    <button class="calc-btn" data-c="5">5</button>
+    <button class="calc-btn" data-c="6">6</button>
+    <button class="calc-btn calc-op" data-c="-">−</button>
+    <button class="calc-btn" data-c="1">1</button>
+    <button class="calc-btn" data-c="2">2</button>
+    <button class="calc-btn" data-c="3">3</button>
+    <button class="calc-btn calc-op" data-c="+">+</button>
+    <button class="calc-btn" data-c="0" style="grid-column:span 2">0</button>
+    <button class="calc-btn" data-c=".">.</button>
+    <button class="calc-btn" data-c="=" style="background:var(--ac);color:#fff;font-weight:800">=</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="btn bg2" style="flex:1" onclick="closeOv('ov-calc')">取消</button>
+    <button class="btn bp" style="flex:1" onclick="applyCalc()">✅ 套用金額</button>
+  </div>
+</div></div>
+
 <div class="ov" id="ov-fixed-pick">
   <div class="modal">
     <div class="mh"></div>
@@ -657,7 +693,7 @@ document.getElementById('c-cancel').addEventListener('click',function(){document
 
 function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id){document.getElementById(id).classList.remove('open');}
-['ov-exp','ov-proj','ov-wl','ov-cat','ov-fx','ov-cur','ov-fixed-pick','ov-proj-bill'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',function(e){if(e.target.id===id)closeOv(id);});});
+['ov-exp','ov-proj','ov-wl','ov-cat','ov-fx','ov-cur','ov-fixed-pick','ov-proj-bill','ov-calc'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',function(e){if(e.target.id===id)closeOv(id);});});
 
 function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
 function pad2(n){return n<10?'0'+n:''+n;}
@@ -805,6 +841,60 @@ function pushToGAS(){
     }
   });
 }
+
+
+// ── 計算機 ─────────────────────────────────────────────────
+var _calcExpr='0';
+function openCalc(){
+  _calcExpr=document.getElementById('f-amt').value||'0';
+  document.getElementById('calc-display').textContent=_calcExpr;
+  if('ov-calc'in document.getElementById('ov-calc')||true)openOv('ov-calc');
+}
+function applyCalc(){
+  var val=parseFloat(document.getElementById('calc-display').textContent)||0;
+  document.getElementById('f-amt').value=val;
+  closeOv('ov-calc');
+  calcFX();
+}
+(function(){
+  var display,expr='0',op='',prev=0,fresh=false;
+  function upd(){display.textContent=expr;}
+  document.addEventListener('DOMContentLoaded',function(){});
+  window.addEventListener('load',function(){
+    display=document.getElementById('calc-display');
+    document.querySelectorAll('.calc-btn').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var c=btn.dataset.c;
+        if(!display)display=document.getElementById('calc-display');
+        if(c==='C'){expr='0';op='';prev=0;fresh=false;}
+        else if(c==='±'){expr=String(-parseFloat(expr)||0);}
+        else if(c==='%'){expr=String(parseFloat(expr)/100);}
+        else if(c==='='){ 
+          if(op){
+            var cur=parseFloat(expr);
+            if(op==='+')expr=String(prev+cur);
+            else if(op==='-')expr=String(prev-cur);
+            else if(op==='×')expr=String(prev*cur);
+            else if(op==='÷')expr=cur?String(prev/cur):'Error';
+            op='';fresh=true;
+          }
+        }
+        else if(['+','-','×','÷'].indexOf(c)>=0){
+          prev=parseFloat(expr)||0;op=c;fresh=true;
+        }
+        else if(c==='.'){
+          if(fresh){expr='0.';fresh=false;}
+          else if(expr.indexOf('.')<0)expr+='.';
+        }
+        else{
+          if(fresh||expr==='0'){expr=c;fresh=false;}
+          else expr+=c;
+        }
+        display.textContent=expr;
+      });
+    });
+  });
+})();
 
 function pullFromGAS(){
   GAS_URL=lsGet('gas_url','')||GAS_URL;
@@ -1214,7 +1304,7 @@ document.getElementById('btn-fixed').addEventListener('click',function(){
     h+='<div class="ei" style="cursor:pointer" data-fi="'+i+'">'
       +'<div class="eico" style="background:var(--s2)">⚡</div>'
       +'<div class="ein"><div class="enm">'+f.name+'</div>'
-      +'<div class="emt">'+f.cat+' · '+f.currency+' '+f.amount+'</div></div>'
+      +'<div class="emt">'+f.cat+(f.sub?' · '+f.sub:'')+' · '+f.currency+' '+f.amount+'</div></div>'
       +'<span class="bdg '+(f.type==='income'?'bgr':'brd')+'">'+(f.type==='income'?'收入':'支出')+'</span>'
       +'</div>';
   }
@@ -1837,6 +1927,18 @@ document.getElementById('cat-save').addEventListener('click',function(){var ico=
 document.getElementById('cat-cancel').addEventListener('click',function(){closeOv('ov-cat');});
 
 // FIXED
+
+function updateFxSub(){
+  var catName=document.getElementById('fx-cat').value||'';
+  var catObj=null;
+  for(var i=0;i<cats.length;i++){if((cats[i].icon+' '+cats[i].name)===catName){catObj=cats[i];break;}}
+  var subs=catObj&&catObj.subs?catObj.subs:[];
+  var el=document.getElementById('fx-sub');if(!el)return;
+  var h='<option value="">（無子分類）</option>';
+  for(var j=0;j<subs.length;j++)h+='<option>'+subs[j]+'</option>';
+  el.innerHTML=h;
+}
+
 function renderFixed(){
   var el=document.getElementById('fx-list'),h='';
   for(var i=0;i<fixedItems.length;i++){var f=fixedItems[i];h+='<div class="di" draggable="true" data-fxi="'+i+'"><span class="dh">⠿</span><div style="flex:1"><div style="font-size:13px;font-weight:700">'+f.name+'</div><div style="font-size:10.5px;color:var(--t3);font-weight:600">'+f.cat+' · '+f.currency+' '+f.amount+'</div></div><span class="bdg '+(f.type==='income'?'bgr':'brd')+'">'+(f.type==='income'?'收入':'支出')+'</span><label class="sw"><input type="checkbox" '+(f.active?'checked':'')+' data-fxact="'+i+'"><span class="sws"></span></label><button class="bico" data-fxedit="'+i+'">✏️</button><button class="bico" style="color:var(--rd)" data-fxdel="'+i+'">🗑</button></div>';}
@@ -1873,14 +1975,33 @@ function renderFixed(){
   el.querySelectorAll('.di').forEach(function(item){item.addEventListener('dragstart',function(){dragIdx=parseInt(item.dataset.fxi);});item.addEventListener('dragover',function(e){e.preventDefault();});item.addEventListener('drop',function(){var ti=parseInt(item.dataset.fxi);if(dragIdx>=0&&dragIdx!==ti){var f2=fixedItems.splice(dragIdx,1)[0];fixedItems.splice(ti,0,f2);dragIdx=-1;saveAll();renderFixed();}});});
 }
 document.getElementById('fx-type-tabs').addEventListener('click',function(e){var t=e.target;if(!t.dataset.fxt)return;document.getElementById('fx-tv').value=t.dataset.fxt;document.querySelectorAll('#fx-type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.fxt===t.dataset.fxt);});});
-function openFxModal(idx){var isEdit=idx!==undefined;document.getElementById('fx-mt').textContent=isEdit?'編輯固定收支':'新增固定收支';document.getElementById('fx-idx').value=isEdit?idx:'';fillSel('fx-cur',currencies);fillCatSel('fx-cat');if(isEdit){var f=fixedItems[idx];document.getElementById('fx-name').value=f.name;document.getElementById('fx-amt').value=f.amount;document.getElementById('fx-cur').value=f.currency;document.getElementById('fx-cat').value=f.cat;document.getElementById('fx-tv').value=f.type;document.querySelectorAll('#fx-type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.fxt===f.type);});}else{['fx-name','fx-amt'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('fx-tv').value='expense';document.querySelectorAll('#fx-type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});}openOv('ov-fx');}
+function openFxModal(idx){var isEdit=idx!==undefined;document.getElementById('fx-mt').textContent=isEdit?'編輯固定收支':'新增固定收支';document.getElementById('fx-idx').value=isEdit?idx:'';fillSel('fx-cur',currencies);fillCatSel('fx-cat');updateFxSub();if(isEdit){var f=fixedItems[idx];document.getElementById('fx-name').value=f.name;document.getElementById('fx-amt').value=f.amount;document.getElementById('fx-cur').value=f.currency;document.getElementById('fx-cat').value=f.cat;updateFxSub();document.getElementById('fx-sub').value=f.sub||'';document.getElementById('fx-tv').value=f.type;document.querySelectorAll('#fx-type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.fxt===f.type);});}else{['fx-name','fx-amt'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('fx-tv').value='expense';document.querySelectorAll('#fx-type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});}openOv('ov-fx');}
 document.getElementById('btn-add-fx').addEventListener('click',function(){openFxModal();});
-document.getElementById('fx-save').addEventListener('click',function(){var name=document.getElementById('fx-name').value.trim(),amt=parseFloat(document.getElementById('fx-amt').value)||0;if(!name){showToast('⚠️ 請填寫名稱');return;}if(!amt){showToast('⚠️ 請填寫金額');return;}var obj={name:name,amount:amt,currency:document.getElementById('fx-cur').value,cat:document.getElementById('fx-cat').value,type:document.getElementById('fx-tv').value,active:true};var idx=document.getElementById('fx-idx').value;if(idx!=='')fixedItems[parseInt(idx)]=obj;else fixedItems.push(obj);saveAll();closeOv('ov-fx');renderFixed();showToast('✅ 已儲存');});
+document.getElementById('fx-save').addEventListener('click',function(){var name=document.getElementById('fx-name').value.trim(),amt=parseFloat(document.getElementById('fx-amt').value)||0;if(!name){showToast('⚠️ 請填寫名稱');return;}if(!amt){showToast('⚠️ 請填寫金額');return;}var obj={name:name,amount:amt,currency:document.getElementById('fx-cur').value,cat:document.getElementById('fx-cat').value,sub:document.getElementById('fx-sub').value,type:document.getElementById('fx-tv').value,active:true};var idx=document.getElementById('fx-idx').value;if(idx!=='')fixedItems[parseInt(idx)]=obj;else fixedItems.push(obj);saveAll();closeOv('ov-fx');renderFixed();showToast('✅ 已儲存');});
 document.getElementById('fx-cancel').addEventListener('click',function(){closeOv('ov-fx');});
 
 // CURRENCY
+
+function syncRates(){
+  showToast('🔄 匯率同步中…');
+  var codes=currencies.filter(function(c){return c.code!=='TWD';}).map(function(c){return c.code;});
+  if(!codes.length){showToast('⚠️ 沒有非台幣幣別');return;}
+  var url='https://api.exchangerate-api.com/v4/latest/TWD';
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    var updated=0;
+    currencies.forEach(function(c,i){
+      if(c.code==='TWD'){currencies[i].rate=1;return;}
+      var r=d.rates[c.code];
+      if(r){currencies[i].rate=Math.round((1/r)*10000)/10000;updated++;}
+    });
+    saveAll();renderCurSettings();
+    showToast('✅ 已更新 '+updated+' 個幣別匯率');
+  }).catch(function(){showToast('❌ 匯率同步失敗，請確認網路');});
+}
+
 function renderCurSettings(){
   var el=document.getElementById('cur-list'),h='';
+  h+='<button class="btn bg2 bsm" onclick="syncRates()" style="margin-bottom:10px;width:100%">🔄 同步最新匯率（對 TWD）</button>';
   for(var i=0;i<currencies.length;i++){var c=currencies[i];h+='<div class="di" draggable="true" data-curi="'+i+'"><span class="dh">⠿</span><div style="flex:1"><span style="font-size:13px;font-weight:800">'+c.code+'</span> <span style="font-size:12px;color:var(--t3);font-weight:600">'+c.name+'</span></div><span style="font-size:12px;color:var(--t2);font-weight:700">× '+c.rate+'</span><button class="bico" data-curedit="'+i+'">✏️</button>'+(i>0?'<button class="bico" style="color:var(--rd)" data-curdel="'+i+'">🗑</button>':'<span style="width:30px"></span>')+'</div>';}
   el.innerHTML=h;
   el.querySelectorAll('[data-curedit]').forEach(function(btn){btn.addEventListener('click',function(){openCurModal(parseInt(btn.dataset.curedit));});});
@@ -2102,6 +2223,17 @@ if(location.protocol==='file:'){
 renderHome();
 renderAddPage();
 initRptPickers();
+// 開啟頁面自動同步
+(function(){
+  var url=lsGet('gas_url','')||'';
+  if(url&&url.indexOf('script.google.com')>=0){
+    GAS_URL=url;
+    setTimeout(function(){
+      showToast('☁️ 自動同步中…');
+      pullFromGAS();
+    },1200);
+  }
+})();
 renderReports();
 renderCalendar();
 renderSettings();
