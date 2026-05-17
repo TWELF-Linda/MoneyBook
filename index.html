@@ -810,6 +810,25 @@ function saveGasUrl(){
   showToast('✅ 網址已儲存，可以開始同步！');
 }
 
+
+var GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCyWWS7oJtTAYUJ7-elodzXpbEvRK7sZig';
+function geminiText(parts,maxTok,cb){
+  fetch(GEMINI_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      contents:[{parts:parts}],
+      generationConfig:{maxOutputTokens:maxTok,temperature:0.3}
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var txt=d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]?d.candidates[0].content.parts[0].text:'';
+    cb(null,txt);
+  })
+  .catch(function(e){cb(e,null);});
+}
+
 function pushToGAS(){
   GAS_URL=lsGet('gas_url','')||GAS_URL;
   if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
@@ -1138,33 +1157,19 @@ function renderHome(){
 
 // ── AI 精靈（每天更新）───────────────────────────────────────
 function renderAIHome(){
-  var td=todayStr();
-  var cached=lsGet('ai_home',null);
-  // 有快取且是今天的，直接顯示
-  if(cached&&cached.date===td){
-    document.getElementById('ai-home-txt').textContent=cached.text;
-    document.getElementById('ai-date').textContent=cached.date;
-    return;
-  }
-  // 需要更新
-  document.getElementById('ai-home-txt').textContent='✨ 小帳精靈思考中…';
-  document.getElementById('ai-date').textContent=td;
+  var el=document.getElementById('ai-home');if(!el)return;
   var stats=calcMonthStats();
-  var msgs=[{role:'user',content:'你是可愛溫暖的財務小顧問「小帳精靈」，語氣活潑、不說教、多用emoji，100字以內，繁體中文。\n今天：'+td+'\n本月收入：NT$'+stats.income+'，支出：NT$'+stats.expense+'，結餘：NT$'+(stats.income-stats.expense)+'。\n請給一句今日的個人化財務觀察或鼓勵。'}];
-  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,messages:msgs})})
-  .then(function(r){return r.json();}).then(function(d){
-    var txt=d.content&&d.content[0]?d.content[0].text:'😊 今天也要好好記帳喔！每一筆都是對未來的一點心意 🌸';
-    document.getElementById('ai-home-txt').textContent=txt;
-    lsSet('ai_home',{date:td,text:txt});
-  }).catch(function(){
-    var fallbacks=['🌸 今天辛苦了！記帳是愛自己的方式，繼續加油！','💰 每天記錄一點點，財務目標就近一點～','✨ 你今天的每一筆消費都值得被好好記錄！','🍀 小帳精靈陪著你，一起朝目標前進！'];
-    var txt=fallbacks[new Date().getDate()%fallbacks.length];
-    document.getElementById('ai-home-txt').textContent=txt;
-    lsSet('ai_home',{date:td,text:txt});
+  if(stats.expense===0&&stats.income===0){el.innerHTML='<div class="ai-bubble">🌸 還沒有本月記帳記錄，快來新增第一筆吧！</div>';return;}
+  var catSummary='';var catMap={};
+  expenses.forEach(function(e){if(e.date&&e.date.slice(0,7)===todayStr().slice(0,7)){catMap[e.cat]=(catMap[e.cat]||0)+e.twd;}});
+  Object.keys(catMap).forEach(function(k){catSummary+=k+' NT$'+catMap[k]+' ';});
+  var t=document.createElement('div');t.className='ai-bubble';t.textContent='🌸 分析中…';
+  el.innerHTML='';el.appendChild(t);
+  geminiText([{text:'你是可愛溫暖的財務小顧問「小帳精靈」。語氣可愛、不說教、只提觀察與建議、多用emoji。200字以內，繁體中文。\n本月：'+catSummary+'\n收入：NT$'+stats.income+'  支出：NT$'+stats.expense+'  結餘：NT$'+(stats.income-stats.expense)}],300,function(err,txt){
+    if(err||!txt)t.textContent='😊 這個月結餘看起來還不錯！繼續保持良好的記帳習慣，小帳精靈為你加油！🌸';
+    else t.textContent=txt;
   });
 }
-
-// ── EXP HTML ─────────────────────────────────────────────────
 function expHTML(e){
   var isIn=e.type==='income',col=catColor(e.cat),ico=e.cat.split(' ')[0]||'📦';
   var billTag=e.billEdited?'<span class="bedit">帳單更新</span>':'';
@@ -1228,18 +1233,20 @@ document.getElementById('btn-magic').addEventListener('click',function(){magicOp
 document.getElementById('btn-parse').addEventListener('click',function(){
   var txt=document.getElementById('magic-input').value.trim();if(!txt){showToast('請輸入描述');return;}
   var res=document.getElementById('magic-res');res.style.display='block';res.textContent='✨ AI 解析中…';
-  var catNames=cats.map(function(c){return c.name;}).join('、');
-  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:'你是記帳APP的AI助手。從以下描述解析記帳資訊，以純JSON回傳（無markdown）：\n描述：「'+txt+'」\n今天：'+todayStr()+'\n可用分類：'+catNames+'\n格式：{"date":"YYYY-MM-DD","amount":數字,"currency":"TWD","category":"分類名","subcat":"","note":"簡短","unparsed":[]}\n相對日期請換算。無法確定的欄位設null並加入unparsed。不可建立新分類。'}]})})
-  .then(function(r){return r.json();}).then(function(d){
-    try{var p=JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
-    if(p.date)document.getElementById('f-date').value=p.date;if(p.amount)document.getElementById('f-amt').value=p.amount;if(p.note)document.getElementById('f-note').value=p.note;
-    if(p.category){for(var i=0;i<cats.length;i++){if(cats[i].name===p.category){activeCat=p.category;activeSub=p.subcat||'';break;}}}
-    if(p.currency)document.getElementById('f-cur').value=p.currency;
-    renderCatChips();calcFX();
-    var msg='✅ 解析完成\n日期：'+(p.date||'?')+'  金額：'+(p.amount||'?')+'  分類：'+(p.category||'?');
-    if(p.unparsed&&p.unparsed.length)msg+='\n⚠️ 未解析：'+p.unparsed.join('、')+'（請手動填）';
-    res.textContent=msg;}catch(e){res.textContent='⚠️ 解析失敗，請手動填寫。';}
-  }).catch(function(){res.textContent='⚠️ 網路錯誤，請手動填寫。';});
+  var catNames=cats.map(function(c){return c.icon+' '+c.name;}).join('、');
+  geminiText([{text:'你是記帳APP的AI助手。從以下描述解析記帳資訊，以純JSON回傳（無markdown無```）：\n描述：「'+txt+'」\n今天：'+todayStr()+'\n可用分類：'+catNames+'\n格式：{"date":"YYYY-MM-DD","amount":數字,"currency":"TWD","category":"分類名","subcat":"","note":"簡短","unparsed":[]}\n相對日期請換算。無法確定的欄位設null並加入unparsed。不可建立新分類。'}],500,function(err,raw){
+    if(err){res.textContent='❌ AI 解析失敗，請手動填寫。';return;}
+    try{
+      var p=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      if(p.amount)document.getElementById('f-amt').value=p.amount;
+      if(p.currency)document.getElementById('f-cur').value=p.currency;
+      if(p.date)document.getElementById('f-date').value=p.date;
+      if(p.note)document.getElementById('f-note').value=p.note;
+      if(p.category){for(var i=0;i<cats.length;i++){if(cats[i].name===p.category||cats[i].icon+' '+cats[i].name===p.category){activeCat=cats[i].name;activeSub=p.subcat||'';break;}}}
+      renderCatChips();calcFX();
+      res.textContent='✅ 解析完成！'+( p.unparsed&&p.unparsed.length?'⚠️ 未辨識：'+p.unparsed.join('、'):'');
+    }catch(e){res.textContent='⚠️ 解析結果格式錯誤，請手動填寫。';}
+  });
 });
 
 var scanSamples=[{name:'IPPUDO拉麵',cat:'🍜 餐飲',sub:'午餐',amount:1580,currency:'JPY',twd:335,note:'一風堂博多店'},{name:'7-ELEVEN購物',cat:'🛍 購物',sub:'日用品',amount:890,currency:'JPY',twd:189,note:'零食飲料'},{name:'計程車費',cat:'🚇 交通',sub:'計程車',amount:45,currency:'USD',twd:1463,note:'機場接送'}];
@@ -1257,21 +1264,13 @@ document.getElementById('scan-drop').addEventListener('click',function(){
       var b64=ev.target.result.split(',')[1];
       var mime=file.type||'image/jpeg';
       var catNames=cats.map(function(c){return c.icon+' '+c.name;}).join('、');
-      fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          model:'claude-sonnet-4-20250514',max_tokens:400,
-          messages:[{role:'user',content:[
-            {type:'image',source:{type:'base64',media_type:mime,data:b64}},
-            {type:'text',text:'請從這張收據辨識資訊，純JSON回傳無markdown。可用分類：'+catNames+'。格式：{"merchant":"商家","amount":數字,"currency":"TWD","date":"YYYY-MM-DD","category":"分類名","subcat":"子分類","note":"備註","unparsed":[]}。幣別：¥=JPY $=USD ₩=KRW €=EUR 無符號=TWD。不確定設null。'}
-          ]}]
-        })
-      })
-      .then(function(r){return r.json();})
-      .then(function(d){
+      geminiText([
+        {inlineData:{mimeType:mime,data:b64}},
+        {text:'請從這張收據辨識資訊，純JSON回傳無markdown無```。可用分類：'+catNames+'。格式：{"merchant":"商家","amount":數字,"currency":"TWD","date":"YYYY-MM-DD","category":"分類名","subcat":"子分類","note":"備註","unparsed":[]}。幣別：¥=JPY $=USD ₩=KRW €=EUR 無符號=TWD。不確定設null。'}
+      ],600,function(err,raw){
+        if(err){ok.textContent='❌ 網路錯誤：'+err.message+' 請手動填寫。';return;}
         try{
-          var p=JSON.parse(d.content[0].text.replace(/```json|```/g,'').trim());
+          var p=JSON.parse(raw.replace(/```json|```/g,'').trim());
           if(p.amount){document.getElementById('f-amt').value=p.amount;}
           if(p.currency)document.getElementById('f-cur').value=p.currency;
           if(p.date)document.getElementById('f-date').value=p.date;
@@ -1287,9 +1286,8 @@ document.getElementById('scan-drop').addEventListener('click',function(){
           msg+=' 請確認後點確認新增';
           ok.textContent=msg;
           ok.style.background='var(--gl)';ok.style.borderColor='var(--gr)';ok.style.color='var(--gr)';
-        }catch(err){ok.textContent='⚠️ 辨識結果解析失敗，請手動填寫。';}
-      })
-      .catch(function(err){ok.textContent='❌ 網路錯誤：'+err.message+' 請手動填寫。';});
+        }catch(e){ok.textContent='⚠️ 辨識結果解析失敗，請手動填寫。';}
+      });
     };
     reader.readAsDataURL(file);
   };
@@ -1611,7 +1609,10 @@ document.getElementById('btn-ai-rpt').addEventListener('click',function(){
   var filtered=expenses.filter(function(e){var d=new Date(e.date);return d.getFullYear()===y&&d.getMonth()===m;});
   var rptData=buildCatMap(filtered);
   var catSummary=rptData.slice(0,5).map(function(d){return d.cat+'：NT$'+d.amount;}).join('、');
-  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:'你是可愛溫暖的財務小顧問「小帳精靈」。語氣可愛、不說教、只提觀察與建議、多用emoji。200字以內，繁體中文。\n本月：'+catSummary+'\n收入：NT$'+stats.income+'  支出：NT$'+stats.expense+'  結餘：NT$'+(stats.income-stats.expense)}]})}).then(function(r){return r.json();}).then(function(d){t.textContent=d.content[0].text;}).catch(function(){t.textContent='😊 這個月結餘看起來還不錯！繼續保持良好的記帳習慣，小帳精靈為你加油！🌸';});
+  geminiText([{text:'你是可愛溫暖的財務小顧問「小帳精靈」。語氣可愛、不說教、只提觀察與建議、多用emoji。200字以內，繁體中文。\n本月：'+catSummary+'\n收入：NT$'+stats.income+'  支出：NT$'+stats.expense+'  結餘：NT$'+(stats.income-stats.expense)}],400,function(err,txt){
+    if(err||!txt)t.textContent='😊 這個月結餘看起來還不錯！繼續保持良好的記帳習慣，小帳精靈為你加油！🌸';
+    else t.textContent=txt;
+  });
 });
 
 // ── CALENDAR ─────────────────────────────────────────────────
