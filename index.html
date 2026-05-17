@@ -726,37 +726,59 @@ function gasStatus(msg,ok){
 
 function gasRequest(params, cb){
   if(!GAS_URL){
-    showToast('⚠️ 請先在設定頁填入 Apps Script 網址');
-    cb(new Error('未設定網址'),null);return;
+    showToast('\u26a0\ufe0f \u8acb\u5148\u5728\u8a2d\u5b9a\u9801\u586b\u5165 Apps Script \u7db2\u5740');
+    cb(new Error('\u672a\u8a2d\u5b9a\u7db2\u5740'),null);return;
   }
 
-  // 上傳和下載都用 JSONP GET，完全避免 CORS 問題
-  var cbName='_gc'+Date.now();
-  var done=false;
-  var timer=setTimeout(function(){
-    if(done)return;done=true;cleanup();
-    cb(new Error('連線逾時'),null);
-  },30000);
-  function cleanup(){
-    clearTimeout(timer);
-    delete window[cbName];
-    var s=document.getElementById(cbName);if(s)s.remove();
+  if(params.action==='save'){
+    var body=JSON.stringify({action:'save',data:params.data});
+    fetch(GAS_URL,{method:'POST',mode:'no-cors',body:body}).catch(function(){});
+    setTimeout(function(){
+      var cbName='_gc'+Date.now();
+      var done=false;
+      var timer=setTimeout(function(){
+        if(done)return;done=true;cleanup();
+        cb(null,{ok:true});
+      },15000);
+      function cleanup(){
+        clearTimeout(timer);
+        delete window[cbName];
+        var s=document.getElementById(cbName);if(s)s.remove();
+      }
+      window[cbName]=function(data){
+        if(done)return;done=true;cleanup();
+        cb(null,{ok:true});
+      };
+      var s=document.createElement('script');
+      s.id=cbName;
+      s.onerror=function(){if(done)return;done=true;cleanup();cb(null,{ok:true});};
+      s.src=GAS_URL+'?action=load&callback='+cbName+'&t='+Date.now();
+      document.head.appendChild(s);
+    },1500);
+  } else {
+    var cbName='_gc'+Date.now();
+    var done=false;
+    var timer=setTimeout(function(){
+      if(done)return;done=true;cleanup();
+      cb(new Error('\u9023\u7dab\u903e\u6642'),null);
+    },20000);
+    function cleanup(){
+      clearTimeout(timer);
+      delete window[cbName];
+      var s=document.getElementById(cbName);if(s)s.remove();
+    }
+    window[cbName]=function(data){
+      if(done)return;done=true;cleanup();cb(null,data);
+    };
+    var s=document.createElement('script');
+    s.id=cbName;
+    s.onerror=function(){
+      if(done)return;done=true;cleanup();
+      cb(new Error('\u4e0b\u8f09\u5931\u6557'),null);
+    };
+    s.src=GAS_URL+'?action=load&callback='+cbName+'&t='+Date.now();
+    document.head.appendChild(s);
   }
-  window[cbName]=function(data){
-    if(done)return;done=true;cleanup();cb(null,data);
-  };
-
-  var qs='action='+params.action+'&callback='+cbName+'&t='+Date.now();
-  if(params.data)qs+='&data='+encodeURIComponent(params.data);
-
-  var s=document.createElement('script');
-  s.id=cbName;
-  s.onerror=function(){
-    if(done)return;done=true;cleanup();
-    cb(new Error('請求失敗'),null);
-  };
-  s.src=GAS_URL+'?'+qs;
-  document.head.appendChild(s);
 }
 
 
