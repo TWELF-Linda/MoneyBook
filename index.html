@@ -732,19 +732,29 @@ function gasRequest(params, cb){
   var isUpload = params.action==='save';
 
   if(isUpload){
-    // Upload: use Image beacon — fires and forgets, no CORS, no onerror
-    // GAS receives via e.parameter, always works
-    var qs='action=save&t='+Date.now()+'&data='+encodeURIComponent(params.data);
-    var img=new Image();
-    img.onload=img.onerror=function(){
-      // Both onload and onerror mean the request was sent
-      cb(null,{ok:true});
-    };
-    img.src=GAS_URL+'?'+qs;
-    // Also try via fetch no-cors as backup
-    try{
-      fetch(GAS_URL+'?'+qs,{mode:'no-cors'}).catch(function(){});
-    }catch(e){}
+    // Upload: use fetch POST — no URL length limit, supports large datasets
+    var body=JSON.stringify({action:'save',data:params.data,t:Date.now()});
+    fetch(GAS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:body
+    })
+    .then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.text();
+    })
+    .then(function(txt){
+      var res=null;
+      try{res=JSON.parse(txt);}catch(e){res={ok:true};}
+      cb(null,res&&res.ok!==false?{ok:true}:res);
+    })
+    .catch(function(e){
+      // GAS redirects may cause opaque response; treat as success if request reached server
+      // Fallback: retry with no-cors (fire-and-forget) so at least data is sent
+      fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:body})
+        .catch(function(){});
+      cb(e,null);
+    });
   } else {
     // Download: JSONP GET
     var cbName='_gc'+Date.now();
