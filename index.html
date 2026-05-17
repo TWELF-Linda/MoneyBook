@@ -729,59 +729,34 @@ function gasRequest(params, cb){
     showToast('⚠️ 請先在設定頁填入 Apps Script 網址');
     cb(new Error('未設定網址'),null);return;
   }
-  var isUpload = params.action==='save';
 
-  if(isUpload){
-    // Upload: use fetch POST — no URL length limit, supports large datasets
-    var body=JSON.stringify({action:'save',data:params.data,t:Date.now()});
-    fetch(GAS_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body:body
-    })
-    .then(function(r){
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      return r.text();
-    })
-    .then(function(txt){
-      var res=null;
-      try{res=JSON.parse(txt);}catch(e){res={ok:true};}
-      cb(null,res&&res.ok!==false?{ok:true}:res);
-    })
-    .catch(function(e){
-      // GAS redirects may cause opaque response; treat as success if request reached server
-      // Fallback: retry with no-cors (fire-and-forget) so at least data is sent
-      fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:body})
-        .catch(function(){});
-      cb(e,null);
-    });
-  } else {
-    // Download: JSONP GET
-    var cbName='_gc'+Date.now();
-    var done=false;
-    var timer=setTimeout(function(){
-      if(done)return;done=true;cleanup();
-      cb(new Error('連線逾時'),null);
-    },20000);
-    function cleanup(){
-      clearTimeout(timer);
-      delete window[cbName];
-      var s=document.getElementById(cbName);if(s)s.remove();
-    }
-    window[cbName]=function(data){
-      if(done)return;done=true;cleanup();cb(null,data);
-    };
-    var qs2='callback='+cbName+'&t='+Date.now();
-    if(params.data)qs2+='&data='+encodeURIComponent(params.data);
-    var s=document.createElement('script');
-    s.id=cbName;
-    s.onerror=function(){
-      if(done)return;done=true;cleanup();
-      cb(new Error('下載失敗'),null);
-    };
-    s.src=GAS_URL+'?'+qs2;
-    document.head.appendChild(s);
+  // 上傳和下載都用 JSONP GET，完全避免 CORS 問題
+  var cbName='_gc'+Date.now();
+  var done=false;
+  var timer=setTimeout(function(){
+    if(done)return;done=true;cleanup();
+    cb(new Error('連線逾時'),null);
+  },30000);
+  function cleanup(){
+    clearTimeout(timer);
+    delete window[cbName];
+    var s=document.getElementById(cbName);if(s)s.remove();
   }
+  window[cbName]=function(data){
+    if(done)return;done=true;cleanup();cb(null,data);
+  };
+
+  var qs='action='+params.action+'&callback='+cbName+'&t='+Date.now();
+  if(params.data)qs+='&data='+encodeURIComponent(params.data);
+
+  var s=document.createElement('script');
+  s.id=cbName;
+  s.onerror=function(){
+    if(done)return;done=true;cleanup();
+    cb(new Error('請求失敗'),null);
+  };
+  s.src=GAS_URL+'?'+qs;
+  document.head.appendChild(s);
 }
 
 
@@ -790,9 +765,12 @@ function pushToGAS(){
   if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
   saveAll();
   var payload=JSON.stringify({
-    currencies:currencies,wallets:wallets,cats:cats,
-    projects:projects,fixed:fixedItems,expenses:expenses,
-    nextId:nextId,theme:activeThemeIdx,ts:Date.now()
+    expenses:expenses.map(function(ex){return{
+      date:ex.date||'',name:ex.name||'',cat:ex.cat||'',sub:ex.sub||'',
+      wallet:ex.wallet||'',proj:ex.proj||'',amount:ex.amount||0,
+      currency:ex.currency||'TWD',twd:ex.twd||0,type:ex.type||'expense',
+      note:ex.note||'',merchant:ex.merchant||''
+    };})
   });
   showToast('☁️ 上傳中…');gasStatus('上傳中…');
   gasRequest({action:'save',data:payload},function(err,res){
