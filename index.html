@@ -519,14 +519,14 @@ input::placeholder{color:var(--t3);font-weight:400}
         <label class="fl">📋 Apps Script 網址 <span style="color:var(--rd);font-weight:800">*必填</span></label>
         <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/xxx/exec" style="font-size:12px"/>
         <div style="display:flex;gap:7px;margin-top:7px">
-          <button class="btn bp bsm" id="btn-save-gas-url">💾 儲存網址</button>
+          <button class="btn bp bsm" id="btn-save-gas-url" onclick="saveGasUrl()">💾 儲存網址</button>
           <span id="gas-url-status" style="font-size:11px;align-self:center;font-weight:700"></span>
         </div>
       </div>
       <div class="divider"></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px">
-        <button class="btn bp bsm" id="btn-gas-push">⬆️ 上傳至 Google Sheets</button>
-        <button class="btn bg2 bsm" id="btn-gas-pull">⬇️ 從雲端下載</button>
+        <button class="btn bp bsm" id="btn-gas-push" onclick="pushToGAS()">⬆️ 上傳至 Google Sheets</button>
+        <button class="btn bg2 bsm" id="btn-gas-pull" onclick="pullFromGAS()">⬇️ 從雲端下載</button>
       </div>
       <div id="gas-status" style="font-size:11px;color:var(--t3);font-weight:600"></div>
       <div class="divider"></div>
@@ -759,6 +759,16 @@ function gasRequest(params, cb){
   document.head.appendChild(s);
 }
 
+
+function saveGasUrl(){
+  var v=(document.getElementById('gas-url-input').value||'').trim();
+  if(!v){showToast('⚠️ 請貼入 Apps Script 網址');return;}
+  if(v.indexOf('script.google.com')<0){showToast('⚠️ 網址格式不正確');return;}
+  lsSet('gas_url',v);GAS_URL=v;
+  var st=document.getElementById('gas-url-status');
+  if(st){st.textContent='✅ 網址已儲存！';st.style.color='var(--gr)';}
+  showToast('✅ 網址已儲存，可以開始同步！');
+}
 
 function pushToGAS(){
   GAS_URL=lsGet('gas_url','')||GAS_URL;
