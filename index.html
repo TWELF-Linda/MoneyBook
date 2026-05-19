@@ -209,9 +209,7 @@ input::placeholder{color:var(--t3);font-weight:400}
 .billt{font-size:11.5px;font-weight:800;color:var(--am);margin-bottom:7px}
 
 /* SCAN */
-.scan-drop{border:2px dashed var(--bd2);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--s2)}
-.scan-drop:hover{border-color:var(--ac);background:var(--al)}
-.scan-ok{background:var(--gl);border:1.5px solid var(--gr);border-radius:var(--rs);padding:10px 13px;margin-top:8px;font-size:12.5px;color:var(--gr);white-space:pre-line;line-height:1.6;font-weight:600}
+
 
 /* BARS */
 .brchart{display:flex;gap:5px;align-items:flex-end;height:86px;margin:8px 0 5px}
@@ -374,13 +372,7 @@ input::placeholder{color:var(--t3);font-weight:400}
     </div>
     <div style="font-size:10px;margin-top:4px;color:var(--am);font-weight:600">套用後鎖定換算金額並標記「帳單更新」</div>
   </div>
-  <p class="stitle">📷 AI 掃描收據自動記帳</p>
-  <div class="scan-drop" id="scan-drop">
-    <div style="font-size:28px;margin-bottom:6px">📷</div>
-    <div style="font-size:13px;font-weight:800;color:var(--t2)">拍照 / 上傳收據</div>
-    <div style="font-size:11px;color:var(--t3);margin-top:3px;font-weight:600">AI 自動辨識金額・日期・商家・幣別</div>
-  </div>
-  <div id="scan-ok" class="scan-ok" style="display:none"></div>
+
   <div class="fr" style="margin-top:10px;margin-bottom:10px">
     <div class="fg" style="flex:1;margin-bottom:0"><label class="fl">👛 錢包</label><select id="f-wallet"></select></div>
     <div class="fg" style="flex:1;margin-bottom:0"><label class="fl">✈️ 專案</label><select id="f-proj"></select></div>
@@ -883,10 +875,9 @@ function pushToGAS(){
   // 壓縮欄位名稱縮短 URL，對應 GAS doGet save 解壓
   var payload=JSON.stringify({
     r:expenses.map(function(ex){return[
-      ex.date||'',ex.name||'',ex.cat||'',ex.sub||'',
-      ex.wallet||'',ex.proj||'',ex.amount||0,
-      ex.currency||'TWD',ex.twd||0,ex.type||'expense',
-      ex.note||'',ex.merchant||''
+      ex.date||'',ex.cat||'',ex.sub||'',ex.merchant||'',
+      ex.wallet||'',ex.currency||'TWD',ex.amount||0,
+      ex.twd||0,ex.type||'expense',ex.note||''
     ];})
   });
   showToast('☁️ 上傳中…');gasStatus('上傳中…');
@@ -1298,50 +1289,7 @@ document.getElementById('btn-parse').addEventListener('click',function(){
   });
 });
 
-var scanSamples=[{name:'IPPUDO拉麵',cat:'🍜 餐飲',sub:'午餐',amount:1580,currency:'JPY',twd:335,note:'一風堂博多店'},{name:'7-ELEVEN購物',cat:'🛍 購物',sub:'日用品',amount:890,currency:'JPY',twd:189,note:'零食飲料'},{name:'計程車費',cat:'🚇 交通',sub:'計程車',amount:45,currency:'USD',twd:1463,note:'機場接送'}];
-var scanIdx=0;
-// ── 真實 AI 收據掃描 ─────────────────────────────────────────
-document.getElementById('scan-drop').addEventListener('click',function(){
-  var input=document.createElement('input');
-  input.type='file';input.accept='image/*';input.capture='environment';
-  input.onchange=function(e){
-    var file=e.target.files[0];if(!file)return;
-    var ok=document.getElementById('scan-ok');
-    ok.style.display='block';ok.textContent='🔍 上傳中，AI 辨識中…';
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      var b64=ev.target.result.split(',')[1];
-      var mime=file.type||'image/jpeg';
-      var catNames=cats.map(function(c){return c.icon+' '+c.name;}).join('、');
-      geminiText([
-        {inlineData:{mimeType:mime,data:b64}},
-        {text:'請從這張收據辨識資訊，純JSON回傳無markdown無```。可用分類：'+catNames+'。格式：{"merchant":"商家","amount":數字,"currency":"TWD","date":"YYYY-MM-DD","category":"分類名","subcat":"子分類","note":"備註","unparsed":[]}。幣別：¥=JPY $=USD ₩=KRW €=EUR 無符號=TWD。不確定設null。'}
-      ],600,function(err,raw){
-        if(err){ok.textContent='❌ 網路錯誤：'+err.message+' 請手動填寫。';return;}
-        try{
-          var p=JSON.parse(raw.replace(/```json|```/g,'').trim());
-          if(p.amount){document.getElementById('f-amt').value=p.amount;}
-          if(p.currency)document.getElementById('f-cur').value=p.currency;
-          if(p.date)document.getElementById('f-date').value=p.date;
-          if(p.note)document.getElementById('f-note').value=p.note;
-          if(p.merchant){document.getElementById('f-merchant').value=p.merchant;if(merchants.indexOf(p.merchant)<0){merchants.push(p.merchant);saveAll();renderMerchantList();}}
-          if(p.category){for(var i=0;i<cats.length;i++){if(cats[i].name===p.category||cats[i].icon+' '+cats[i].name===p.category){activeCat=cats[i].name;activeSub=p.subcat||'';break;}}}
-          renderCatChips();calcFX();
-          var msg='✅ AI辨識完成！';
-          if(p.merchant)msg+=' 商家：'+p.merchant;
-          msg+=' 金額：'+(p.currency||'TWD')+' '+(p.amount||'?');
-          msg+=' 分類：'+(p.category||'?');
-          if(p.unparsed&&p.unparsed.length)msg+=' ⚠️ 未辨識：'+p.unparsed.join('、');
-          msg+=' 請確認後點確認新增';
-          ok.textContent=msg;
-          ok.style.background='var(--gl)';ok.style.borderColor='var(--gr)';ok.style.color='var(--gr)';
-        }catch(e){ok.textContent='⚠️ 辨識結果解析失敗，請手動填寫。';}
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-  input.click();
-});
+
 document.getElementById('btn-fixed').addEventListener('click',function(){
   var active=fixedItems.filter(function(f){return f.active;});
   if(!active.length){showToast('⚠️ 無啟用的固定收支');return;}
@@ -1392,7 +1340,7 @@ document.getElementById('submit-btn').addEventListener('click',function(){
 });
 document.getElementById('cancel-btn').addEventListener('click',function(){resetAdd();gotoPage('home');});
 
-function resetAdd(){document.getElementById('f-eid').value='';document.getElementById('add-ttl').textContent='✏️ 新增記帳';document.getElementById('submit-btn').textContent='✅ 確認新增';document.getElementById('f-amt').value='';document.getElementById('f-note').value='';document.getElementById('f-bill').value='';document.getElementById('f-date').value='';document.getElementById('fxb').style.display='none';document.getElementById('billb').style.display='none';document.getElementById('scan-ok').style.display='none';document.getElementById('magic-res').style.display='none';document.getElementById('magic-wrap').classList.remove('open');fxLocked=false;magicOpen=false;activeCat=cats[0]?cats[0].name:'餐飲';activeSub='';expType='expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});}
+function resetAdd(){document.getElementById('f-eid').value='';document.getElementById('add-ttl').textContent='✏️ 新增記帳';document.getElementById('submit-btn').textContent='✅ 確認新增';document.getElementById('f-amt').value='';document.getElementById('f-note').value='';document.getElementById('f-bill').value='';document.getElementById('f-date').value='';document.getElementById('fxb').style.display='none';document.getElementById('billb').style.display='none';document.getElementById('magic-res').style.display='none';document.getElementById('magic-wrap').classList.remove('open');fxLocked=false;magicOpen=false;activeCat=cats[0]?cats[0].name:'餐飲';activeSub='';expType='expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});}
 function editExp(id){var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}if(!e)return;gotoPage('add');document.getElementById('add-ttl').textContent='✏️ 編輯記帳';document.getElementById('submit-btn').textContent='💾 儲存修改';document.getElementById('f-eid').value=id;document.getElementById('f-date').value=e.date;document.getElementById('f-amt').value=e.amount;document.getElementById('f-note').value=e.note;document.getElementById('f-merchant').value=e.merchant||'';activeCat=e.cat.split(' ').slice(1).join(' ');activeSub=e.sub||'';expType=e.type;renderAddPage();document.getElementById('f-merchant').value=e.merchant||'';document.getElementById('f-cur').value=e.currency;document.querySelectorAll('#type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.type===e.type);});calcFX();}
 
 // ── PROJECTS ─────────────────────────────────────────────────
