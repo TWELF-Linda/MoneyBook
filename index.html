@@ -518,6 +518,20 @@ input::placeholder{color:var(--t3);font-weight:400}
   <div id="set-theme">
     <p class="stitle" style="margin-top:4px">APP 主題</p>
     <div id="theme-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    <p class="stitle">🤖 AI 功能設定</p>
+    <div class="card" style="padding:13px 14px">
+      <div class="fg">
+        <label class="fl">Gemini API Key <span style="color:var(--t3);font-size:11px">（免費，<a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--ac)">點此申請</a>）</span></label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="password" id="gemini-key-input" placeholder="貼上你的 Gemini API Key" style="flex:1;font-size:12px" autocomplete="off"/>
+          <button type="button" onclick="toggleKeyVisibility()" style="background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--rs);padding:8px 10px;cursor:pointer;font-size:15px">👁</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:7px;align-items:center">
+          <button class="btn bp bsm" onclick="saveGeminiKey()">💾 儲存 Key</button>
+          <span id="gemini-key-status" style="font-size:11px;font-weight:700"></span>
+        </div>
+      </div>
+    </div>
     <p class="stitle">☁️ Google Sheets 雲端同步</p>
     <div class="card" style="padding:13px 14px">
       <div class="fg">
@@ -800,6 +814,22 @@ function gasRequest(params, cb){
   }
 }
 
+
+function saveGeminiKey(){
+  var v=(document.getElementById('gemini-key-input').value||'').trim();
+  if(!v){showToast('⚠️ 請貼入 Gemini API Key');return;}
+  if(!v.startsWith('AIza')){showToast('⚠️ Key 格式不正確，應以 AIza 開頭');return;}
+  lsSet('gemini_key',v);
+  var st=document.getElementById('gemini-key-status');
+  if(st){st.textContent='✅ 已儲存！';st.style.color='var(--gr)';}
+  showToast('✅ Gemini API Key 已儲存，AI 功能啟用！');
+}
+function toggleKeyVisibility(){
+  var inp=document.getElementById('gemini-key-input');
+  if(!inp)return;
+  inp.type=inp.type==='password'?'text':'password';
+}
+
 function saveGasUrl(){
   var v=(document.getElementById('gas-url-input').value||'').trim();
   if(!v){showToast('⚠️ 請貼入 Apps Script 網址');return;}
@@ -811,8 +841,10 @@ function saveGasUrl(){
 }
 
 
-var GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCyWWS7oJtTAYUJ7-elodzXpbEvRK7sZig';
 function geminiText(parts,maxTok,cb){
+  var apiKey=lsGet('gemini_key','')||'';
+  if(!apiKey){cb(new Error('請先在設定頁填入 Gemini API Key'),null);return;}
+  var GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+apiKey;
   fetch(GEMINI_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -1718,6 +1750,14 @@ function renderThemeCards(){
     var urlSt=document.getElementById('gas-url-status');
     if(urlSt)urlSt.textContent=savedUrl?'✅ 已設定網址':'⚠️ 尚未設定 Apps Script 網址';
     if(urlSt)urlSt.style.color=savedUrl?'var(--gr)':'var(--am)';
+  }
+  // load saved Gemini Key
+  var gkInp=document.getElementById('gemini-key-input');
+  if(gkInp){
+    var savedKey=lsGet('gemini_key','')||'';
+    gkInp.value=savedKey;
+    var gkSt=document.getElementById('gemini-key-status');
+    if(gkSt){gkSt.textContent=savedKey?'✅ 已設定':'⚠️ 尚未設定，AI 功能無法使用';gkSt.style.color=savedKey?'var(--gr)':'var(--am)';}
   }
   var saveUrlBtn=document.getElementById('btn-gas-save-url');
   if(saveUrlBtn)saveUrlBtn.onclick=function(){
