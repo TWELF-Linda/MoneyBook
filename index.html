@@ -521,9 +521,9 @@ input::placeholder{color:var(--t3);font-weight:400}
     <p class="stitle">🤖 AI 功能設定</p>
     <div class="card" style="padding:13px 14px">
       <div class="fg">
-        <label class="fl">Gemini API Key <span style="color:var(--t3);font-size:11px">（免費，<a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--ac)">點此申請</a>）</span></label>
+        <label class="fl">AI API Key <span style="color:var(--t3);font-size:11px">（免費，<a href="https://openrouter.ai/keys" target="_blank" style="color:var(--ac)">OpenRouter 申請</a>）</span></label>
         <div style="display:flex;gap:8px;align-items:center">
-          <input type="password" id="gemini-key-input" placeholder="貼上你的 Gemini API Key" style="flex:1;font-size:12px" autocomplete="off"/>
+          <input type="password" id="gemini-key-input" placeholder="sk-or-v1-..." style="flex:1;font-size:12px" autocomplete="off"/>
           <button type="button" onclick="toggleKeyVisibility()" style="background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--rs);padding:8px 10px;cursor:pointer;font-size:15px">👁</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:7px;align-items:center">
@@ -818,7 +818,7 @@ function gasRequest(params, cb){
 function saveGeminiKey(){
   var v=(document.getElementById('gemini-key-input').value||'').trim();
   if(!v){showToast('⚠️ 請貼入 Gemini API Key');return;}
-  if(!v.startsWith('AIza')){showToast('⚠️ Key 格式不正確，應以 AIza 開頭');return;}
+  if(!v.startsWith('sk-or-')){showToast('⚠️ Key 格式不正確，應以 sk-or- 開頭');return;}
   lsSet('gemini_key',v);
   var st=document.getElementById('gemini-key-status');
   if(st){st.textContent='✅ 已儲存！';st.style.color='var(--gr)';}
@@ -843,19 +843,34 @@ function saveGasUrl(){
 
 function geminiText(parts,maxTok,cb){
   var apiKey=lsGet('gemini_key','')||'';
-  if(!apiKey){cb(new Error('請先在設定頁填入 Gemini API Key'),null);return;}
-  var GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+apiKey;
-  fetch(GEMINI_URL,{
+  if(!apiKey){cb(new Error('請先在設定頁填入 AI API Key'),null);return;}
+  // 把 Gemini parts 格式轉成 OpenRouter messages 格式
+  var text=parts.map(function(p){return p.text||'';}).filter(Boolean).join('\n');
+  var imagesParts=parts.filter(function(p){return p.inlineData;});
+  var messages=[{role:'user',content:text}];
+  // 如果有圖片，加入 vision 格式
+  if(imagesParts.length>0){
+    var contentArr=[{type:'text',text:text}];
+    imagesParts.forEach(function(p){
+      contentArr.unshift({type:'image_url',image_url:{url:'data:'+p.inlineData.mimeType+';base64,'+p.inlineData.data}});
+    });
+    messages=[{role:'user',content:contentArr}];
+  }
+  var model=imagesParts.length>0?'google/gemini-2.0-flash-exp:free':'mistralai/mistral-7b-instruct:free';
+  fetch('https://openrouter.ai/api/v1/chat/completions',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      contents:[{parts:parts}],
-      generationConfig:{maxOutputTokens:maxTok,temperature:0.3}
-    })
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Bearer '+apiKey,
+      'HTTP-Referer':'https://twelf-linda.github.io/MoneyBook/',
+      'X-Title':'MoneyBook'
+    },
+    body:JSON.stringify({model:model,messages:messages,max_tokens:maxTok,temperature:0.3})
   })
   .then(function(r){return r.json();})
   .then(function(d){
-    var txt=d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]?d.candidates[0].content.parts[0].text:'';
+    if(d.error){cb(new Error(d.error.message||JSON.stringify(d.error)),null);return;}
+    var txt=d&&d.choices&&d.choices[0]&&d.choices[0].message?d.choices[0].message.content:'';
     cb(null,txt);
   })
   .catch(function(e){cb(e,null);});
@@ -1189,17 +1204,19 @@ function renderHome(){
 
 // ── AI 精靈（每天更新）───────────────────────────────────────
 function renderAIHome(){
-  var el=document.getElementById('ai-home');if(!el)return;
+  var el=document.getElementById('ai-home-txt');if(!el)return;
+  var apiKey=lsGet('gemini_key','')||'';
+  if(!apiKey){el.textContent='💡 請先在設定頁填入 Gemini API Key，即可啟用小帳精靈！';return;}
   var stats=calcMonthStats();
-  if(stats.expense===0&&stats.income===0){el.innerHTML='<div class="ai-bubble">🌸 還沒有本月記帳記錄，快來新增第一筆吧！</div>';return;}
+  if(stats.expense===0&&stats.income===0){el.textContent='🌸 還沒有本月記帳記錄，快來新增第一筆吧！';return;}
   var catSummary='';var catMap={};
   expenses.forEach(function(e){if(e.date&&e.date.slice(0,7)===todayStr().slice(0,7)){catMap[e.cat]=(catMap[e.cat]||0)+e.twd;}});
   Object.keys(catMap).forEach(function(k){catSummary+=k+' NT$'+catMap[k]+' ';});
-  var t=document.createElement('div');t.className='ai-bubble';t.textContent='🌸 分析中…';
-  el.innerHTML='';el.appendChild(t);
+  el.textContent='🌸 分析中…';
   geminiText([{text:'你是可愛溫暖的財務小顧問「小帳精靈」。語氣可愛、不說教、只提觀察與建議、多用emoji。200字以內，繁體中文。\n本月：'+catSummary+'\n收入：NT$'+stats.income+'  支出：NT$'+stats.expense+'  結餘：NT$'+(stats.income-stats.expense)}],300,function(err,txt){
-    if(err||!txt)t.textContent='😊 這個月結餘看起來還不錯！繼續保持良好的記帳習慣，小帳精靈為你加油！🌸';
-    else t.textContent=txt;
+    if(err){el.textContent='❌ AI 錯誤：'+err.message;return;}
+    if(!txt){el.textContent='❌ AI 回應為空';return;}
+    el.textContent=txt;
   });
 }
 function expHTML(e){
