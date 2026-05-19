@@ -856,7 +856,7 @@ function geminiText(parts,maxTok,cb){
     });
     messages=[{role:'user',content:contentArr}];
   }
-  var model=imagesParts.length>0?'google/gemini-2.0-flash-exp:free':'openrouter/auto';
+  var model=imagesParts.length>0?'meta-llama/llama-4-maverick:free':'openrouter/auto';
   fetch('https://openrouter.ai/api/v1/chat/completions',{
     method:'POST',
     headers:{
