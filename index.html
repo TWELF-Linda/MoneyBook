@@ -1359,7 +1359,24 @@ document.getElementById('submit-btn').addEventListener('click',function(){
 document.getElementById('cancel-btn').addEventListener('click',function(){resetAdd();gotoPage('home');});
 
 function resetAdd(){document.getElementById('f-eid').value='';document.getElementById('add-ttl').textContent='✏️ 新增記帳';document.getElementById('submit-btn').textContent='✅ 確認新增';document.getElementById('f-amt').value='';document.getElementById('f-note').value='';document.getElementById('f-bill').value='';document.getElementById('f-date').value='';document.getElementById('fxb').style.display='none';document.getElementById('billb').style.display='none';document.getElementById('magic-res').style.display='none';document.getElementById('magic-wrap').classList.remove('open');fxLocked=false;magicOpen=false;activeCat=cats[0]?cats[0].name:'餐飲';activeSub='';expType='expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});}
-function editExp(id){var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}if(!e)return;gotoPage('add');document.getElementById('add-ttl').textContent='✏️ 編輯記帳';document.getElementById('submit-btn').textContent='💾 儲存修改';document.getElementById('f-eid').value=id;document.getElementById('f-date').value=e.date;document.getElementById('f-amt').value=e.amount;document.getElementById('f-note').value=e.note||'';document.getElementById('f-merchant').value=e.merchant||'';var catFull=e.cat||'';var catFound=false;for(var ci=0;ci<cats.length;ci++){if(cats[ci].name===catFull||(cats[ci].icon+' '+cats[ci].name)===catFull){activeCat=cats[ci].name;catFound=true;break;}}if(!catFound)activeCat=catFull.split(' ').slice(1).join(' ')||catFull;activeSub=e.sub||'';expType=e.type;renderAddPage();document.getElementById('f-merchant').value=e.merchant||'';document.getElementById('f-cur').value=e.currency;document.querySelectorAll('#type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.type===e.type);});calcFX();}
+function editExp(id){var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}if(!e)return;gotoPage('add');document.getElementById('add-ttl').textContent='✏️ 編輯記帳';document.getElementById('submit-btn').textContent='💾 儲存修改';document.getElementById('f-eid').value=id;document.getElementById('f-date').value=e.date;document.getElementById('f-amt').value=e.amount;document.getElementById('f-note').value=e.note||'';document.getElementById('f-merchant').value=e.merchant||'';var catFull=e.cat||'';var catFound=false;for(var ci=0;ci<cats.length;ci++){if(cats[ci].name===catFull||(cats[ci].icon+' '+cats[ci].name)===catFull){activeCat=cats[ci].name;catFound=true;break;}}if(!catFound)activeCat=catFull.split(' ').slice(1).join(' ')||catFull;activeSub=e.sub||'';expType=e.type;renderAddPage();document.getElementById('f-merchant').value=e.merchant||'';document.getElementById('f-cur').value=e.currency;
+  // 設定錢包：相容「🏦 轉帳」和「轉帳」兩種格式
+  var walletFull=e.wallet||'';
+  var walSel=document.getElementById('f-wallet');
+  if(walSel){
+    var walOpts=walSel.options;
+    var walFound=false;
+    for(var wi=0;wi<walOpts.length;wi++){
+      if(walOpts[wi].value===walletFull){walSel.selectedIndex=wi;walFound=true;break;}
+    }
+    if(!walFound){
+      // 嘗試只比對名稱部分
+      for(var wi=0;wi<walOpts.length;wi++){
+        if(walOpts[wi].value.indexOf(walletFull)>=0||walletFull.indexOf(walOpts[wi].value.split(' ').slice(1).join(' '))>=0){walSel.selectedIndex=wi;break;}
+      }
+    }
+  }
+  document.querySelectorAll('#type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.type===e.type);});calcFX();}
 
 // ── PROJECTS ─────────────────────────────────────────────────
 function renderProjects(){
