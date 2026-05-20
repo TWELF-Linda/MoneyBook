@@ -731,7 +731,7 @@ function calcMonthStats(){
     var e=expenses[i];
     var d=new Date(e.date);
     if(d.getFullYear()===y&&d.getMonth()===m){
-      if(!e.proj){if(e.type==='income')income+=e.twd;else if(e.type==='expense')expense+=e.twd;}
+      if(!e.proj){if(e.type==='income')income+=(Number(e.twd)||0);else if(e.type==='expense')expense+=(Number(e.twd)||0);}
     }
   }
   var fixedExp=0;
@@ -969,7 +969,24 @@ function pullFromGAS(){
       if(d.cats)cats=d.cats;
       if(d.projects)projects=d.projects;
       if(d.fixed)fixedItems=d.fixed;
-      if(d.expenses)expenses=d.expenses;
+      if(d.expenses){
+        // 補齊從 GAS 下載缺少的 id 和 name 欄位
+        var maxId=nextId||1;
+        expenses=d.expenses.map(function(ex,i){
+          var id=ex.id||(maxId+i);
+          return {
+            id:id,
+            name:ex.note||ex.sub||ex.cat||'記帳',
+            date:ex.date||'',cat:ex.cat||'',sub:ex.sub||'',
+            merchant:ex.merchant||'',wallet:ex.wallet||'',
+            currency:ex.currency||'TWD',amount:Number(ex.amount)||0,
+            twd:Number(ex.twd)||0,type:ex.type||'expense',
+            note:ex.note||'',proj:ex.proj||'',
+            billEdited:ex.billEdited||false,billNote:ex.billNote||''
+          };
+        });
+        nextId=maxId+d.expenses.length;
+      }
       if(d.nextId)nextId=d.nextId;
       if(d.theme!==undefined)activeThemeIdx=d.theme;
       saveAll();applyTheme(activeThemeIdx);renderHome();
@@ -1215,18 +1232,19 @@ function expHTML(e){
   var billTag=e.billEdited?'<span class="bedit">帳單更新</span>':'';
   var amtStr=e.currency==='TWD'?'NT$'+e.amount.toLocaleString():e.currency+' '+e.amount.toLocaleString();
   var twdLine=e.currency!=='TWD'?'<div class="etw">≈ NT$'+e.twd.toLocaleString()+'</div>':'';
-  return '<div class="ei" data-eid="'+e.id+'"><div class="eico" style="background:'+col+'22">'+ico+'</div><div class="ein"><div class="enm">'+e.name+billTag+'</div><div class="emt">'+e.date+' · '+e.wallet+(e.sub?' · '+e.sub:'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':'-')+amtStr+'</div>'+twdLine+'</div></div>';
+  var dispName=e.note||e.sub||e.cat||'記帳';
+  return '<div class="ei" data-eid="'+e.id+'"><div class="eico" style="background:'+col+'22">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+e.date+' · '+e.wallet+(e.sub?' · '+e.sub:'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':'-')+amtStr+'</div>'+twdLine+'</div></div>';
 }
 function bindExpClicks(container){container.querySelectorAll('.ei').forEach(function(el){el.addEventListener('click',function(){viewExp(parseInt(el.dataset.eid));});});}
 
 // ── VIEW EXP ─────────────────────────────────────────────────
 function viewExp(id){
   var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}if(!e)return;
-  document.getElementById('ov-exp-t').textContent=e.name;
+  document.getElementById('ov-exp-t').textContent=e.note||e.sub||e.cat||'記帳';
   var isIn=e.type==='income',amtStr=e.currency==='TWD'?'NT$'+e.amount.toLocaleString():e.currency+' '+e.amount.toLocaleString();
   document.getElementById('ov-exp-b').innerHTML='<div class="sg" style="margin-bottom:10px"><div class="sc"><div class="sl">日期</div><div style="font-size:12px;font-weight:700">'+e.date+'</div></div><div class="sc"><div class="sl">錢包</div><div style="font-size:12px;font-weight:700">'+e.wallet+'</div></div><div class="sc"><div class="sl">分類</div><div style="font-size:12px;font-weight:700">'+e.cat+'</div></div></div><div class="sc" style="margin-bottom:10px"><div class="sl">金額</div><div style="font-size:20px;font-weight:900;color:'+(isIn?'var(--gr)':'var(--rd)')+';">'+(isIn?'+':'-')+amtStr+'</div>'+(e.currency!=='TWD'?'<div style="font-size:11px;color:var(--t3);font-weight:600">≈ NT$'+e.twd.toLocaleString()+'</div>':'')+(e.billEdited?'<div class="bedit" style="display:inline-flex;margin-top:5px">📄 '+(e.billNote||'帳單已更新')+'</div>':'')+'</div>'+(e.note?'<div class="sc"><div class="sl">備註</div><div style="font-size:13px;font-weight:600">'+e.note+'</div></div>':'');
   document.getElementById('ov-edit').onclick=function(){closeOv('ov-exp');editExp(id);};
-  document.getElementById('ov-del').onclick=function(){showConfirm('🗑️','確定刪除？','「'+e.name+'」刪除後無法復原。',function(){expenses=expenses.filter(function(x){return x.id!==id;});saveAll();closeOv('ov-exp');renderHome();showToast('🗑️ 已刪除');setTimeout(function(){pushToGAS();},800);});};
+  document.getElementById('ov-del').onclick=function(){showConfirm('🗑️','確定刪除？','「'+(e.note||e.sub||e.cat||'此記錄')+'」刪除後無法復原。',function(){expenses=expenses.filter(function(x){return x.id!==id;});saveAll();closeOv('ov-exp');renderHome();showToast('🗑️ 已刪除');setTimeout(function(){pushToGAS();},800);});};
   document.getElementById('ov-cls').onclick=function(){closeOv('ov-exp');};
   openOv('ov-exp');
 }
@@ -1397,7 +1415,7 @@ document.getElementById('pj-cancel').addEventListener('click',function(){closeOv
 function buildCatMap(filteredExp){
   var map={};
   for(var i=0;i<cats.length;i++)map[cats[i].icon+' '+cats[i].name]={cat:cats[i].icon+' '+cats[i].name,amount:0,color:cats[i].color};
-  for(var i=0;i<filteredExp.length;i++){var e=filteredExp[i];if(e.type==='expense'){if(map[e.cat])map[e.cat].amount+=e.twd;}}
+  for(var i=0;i<filteredExp.length;i++){var e=filteredExp[i];if(e.type==='expense'){if(map[e.cat])map[e.cat].amount+=(Number(e.twd)||0);}}
   var arr=[];for(var k in map){if(map[k].amount>0)arr.push(map[k]);}
   arr.sort(function(a,b){return b.amount-a.amount;});
   return arr;
