@@ -1947,7 +1947,50 @@ function renderSubEditor(){
 }
 document.getElementById('btn-add-sub').addEventListener('click',function(){subEditorSubs.push('');renderSubEditor();var inputs=document.getElementById('sub-editor').querySelectorAll('input');if(inputs.length)inputs[inputs.length-1].focus();});
 document.getElementById('btn-add-cat').addEventListener('click',function(){openCatModal();});
-document.getElementById('cat-save').addEventListener('click',function(){var ico=document.getElementById('ct-ico').value||'📦',name=document.getElementById('ct-name').value.trim(),color=document.getElementById('ct-color').value;if(!name){showToast('⚠️ 請填寫分類名稱');return;}var sub=subEditorSubs.filter(function(s){return s.trim();}).map(function(s){return s.trim();});var idx=document.getElementById('ct-idx').value;if(idx!==''){var ii=parseInt(idx);cats[ii]=Object.assign({},cats[ii],{icon:ico,name:name,color:color,sub:sub});}else cats.push({icon:ico,name:name,color:color,active:true,sub:sub});saveAll();closeOv('ov-cat');renderCatSettings();renderCatChips();showToast('✅ 分類已儲存');});
+document.getElementById('cat-save').addEventListener('click',function(){
+  var ico=document.getElementById('ct-ico').value||'📦',name=document.getElementById('ct-name').value.trim(),color=document.getElementById('ct-color').value;
+  if(!name){showToast('⚠️ 請填寫分類名稱');return;}
+  var sub=subEditorSubs.filter(function(s){return s.trim();}).map(function(s){return s.trim();});
+  var idx=document.getElementById('ct-idx').value;
+  if(idx!==''){
+    var ii=parseInt(idx);
+    var oldCat=cats[ii];
+    var oldFullName=oldCat.icon+' '+oldCat.name;
+    var newFullName=ico+' '+name;
+    // 同步更新既有記錄的分類名稱
+    if(oldFullName!==newFullName){
+      var catUpdated=0;
+      expenses.forEach(function(e){
+        if(e.cat===oldFullName||e.cat===oldCat.name){
+          e.cat=newFullName;catUpdated++;
+        }
+      });
+      if(catUpdated>0)showToast('✅ 分類已儲存，同步更新 '+catUpdated+' 筆記錄');
+      else showToast('✅ 分類已儲存');
+    } else {
+      // 分類名稱沒變，檢查子分類是否有更名
+      var oldSubs=oldCat.subs||oldCat.sub||[];
+      sub.forEach(function(newSub,si){
+        var oldSub=oldSubs[si];
+        if(oldSub&&oldSub!==newSub){
+          var subUpdated=0;
+          expenses.forEach(function(e){
+            if((e.cat===oldFullName||e.cat===oldCat.name)&&e.sub===oldSub){
+              e.sub=newSub;subUpdated++;
+            }
+          });
+          if(subUpdated>0)showToast('✅ 子分類已更新，同步 '+subUpdated+' 筆記錄');
+        }
+      });
+      showToast('✅ 分類已儲存');
+    }
+    cats[ii]=Object.assign({},cats[ii],{icon:ico,name:name,color:color,subs:sub,sub:sub});
+  } else {
+    cats.push({icon:ico,name:name,color:color,active:true,subs:sub,sub:sub});
+    showToast('✅ 分類已儲存');
+  }
+  saveAll();closeOv('ov-cat');renderCatSettings();renderCatChips();
+});
 document.getElementById('cat-cancel').addEventListener('click',function(){closeOv('ov-cat');});
 
 // FIXED
