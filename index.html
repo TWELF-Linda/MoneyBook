@@ -1818,7 +1818,35 @@ function renderWallets(){
 var walIcos=['💳','💵','🏦','📱','💰','🪙','💎','🎒','✈️','🌏','🔐','💼'];
 function openWlModal(idx){var isEdit=idx!==undefined;document.getElementById('wl-mt').textContent=isEdit?'編輯錢包':'新增錢包';document.getElementById('wl-idx').value=isEdit?idx:'';var cur=isEdit?wallets[idx].icon:'💳';selWalIco=cur;var h='';for(var i=0;i<walIcos.length;i++){var sel=walIcos[i]===cur;h+='<span style="font-size:22px;cursor:pointer;padding:5px;border-radius:7px;background:'+(sel?'var(--al)':'')+';border:'+(sel?'1.5px solid var(--ac)':'1.5px solid transparent')+'" data-wico="'+walIcos[i]+'">'+walIcos[i]+'</span>';}document.getElementById('wl-icons').innerHTML=h;document.getElementById('wl-icons').querySelectorAll('span').forEach(function(s){s.addEventListener('click',function(){selWalIco=s.dataset.wico;document.getElementById('wl-icons').querySelectorAll('span').forEach(function(x){x.style.background='';x.style.border='1.5px solid transparent';});s.style.background='var(--al)';s.style.border='1.5px solid var(--ac)';});});document.getElementById('wl-name').value=isEdit?wallets[idx].name:'';openOv('ov-wl');}
 document.getElementById('btn-add-wl').addEventListener('click',function(){openWlModal();});
-document.getElementById('wl-save').addEventListener('click',function(){var name=document.getElementById('wl-name').value.trim();if(!name){showToast('⚠️ 請填寫名稱');return;}var idx=document.getElementById('wl-idx').value;if(idx!=='')wallets[parseInt(idx)]={icon:selWalIco,name:name,active:wallets[parseInt(idx)].active};else wallets.push({icon:selWalIco,name:name,active:true});saveAll();closeOv('ov-wl');renderWallets();fillWalSel('f-wallet');showToast('✅ 錢包已儲存');});
+document.getElementById('wl-save').addEventListener('click',function(){
+  var name=document.getElementById('wl-name').value.trim();
+  if(!name){showToast('⚠️ 請填寫名稱');return;}
+  var idx=document.getElementById('wl-idx').value;
+  if(idx!==''){
+    var ii=parseInt(idx);
+    var oldWl=wallets[ii];
+    var oldFullName=oldWl.icon+' '+oldWl.name;
+    var newFullName=selWalIco+' '+name;
+    wallets[ii]={icon:selWalIco,name:name,active:oldWl.active};
+    // 同步更新既有記錄的錢包名稱
+    if(oldFullName!==newFullName){
+      var updated=0;
+      expenses.forEach(function(e){
+        if(e.wallet===oldFullName||e.wallet===oldWl.name){
+          e.wallet=newFullName;updated++;
+        }
+      });
+      if(updated>0)showToast('✅ 錢包已儲存，同步更新 '+updated+' 筆記錄');
+      else showToast('✅ 錢包已儲存');
+    } else {
+      showToast('✅ 錢包已儲存');
+    }
+  } else {
+    wallets.push({icon:selWalIco,name:name,active:true});
+    showToast('✅ 錢包已儲存');
+  }
+  saveAll();closeOv('ov-wl');renderWallets();fillWalSel('f-wallet');
+});
 document.getElementById('wl-cancel').addEventListener('click',function(){closeOv('ov-wl');});
 
 // CATEGORIES
