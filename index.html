@@ -453,7 +453,7 @@ input::placeholder{color:var(--t3);font-weight:400}
     </div>
     <div class="card">
       <div style="font-size:13px;font-weight:800;margin-bottom:5px">各類支出（本月）</div>
-      <div class="brchart" id="rbars"></div>
+      <div id="rbars" style="min-height:0"></div>
       <div id="rlegend" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"></div>
     </div>
     <div class="card">
@@ -1626,28 +1626,119 @@ document.getElementById('pj-cancel').addEventListener('click',function(){closeOv
 // ── 統計資料建構（月/年/專案共用）────────────────────────────
 function buildCatMap(filteredExp){
   var map={};
-  for(var i=0;i<cats.length;i++)map[cats[i].icon+' '+cats[i].name]={cat:cats[i].icon+' '+cats[i].name,amount:0,color:cats[i].color};
-  for(var i=0;i<filteredExp.length;i++){var e=filteredExp[i];if(e.type==='expense'){if(map[e.cat])map[e.cat].amount+=(Number(e.twd)||0);}}
-  var arr=[];for(var k in map){if(map[k].amount>0)arr.push(map[k]);}
+  // 建立完整名稱和純名稱的雙重 key
+  for(var i=0;i<cats.length;i++){
+    var fullKey=cats[i].icon+' '+cats[i].name;
+    map[fullKey]={cat:fullKey,amount:0,color:cats[i].color};
+    // 也加純名稱的 alias
+    if(cats[i].name)map[cats[i].name]=map[fullKey];
+  }
+  for(var i=0;i<filteredExp.length;i++){
+    var e=filteredExp[i];
+    if(e.type==='expense'){
+      var catKey=e.cat||'';
+      if(map[catKey]){
+        map[catKey].amount+=(Number(e.twd)||0);
+      } else {
+        // 找不到就嘗試部分比對
+        for(var k in map){
+          if(k.indexOf(catKey)>=0||catKey.indexOf(k)>=0){map[k].amount+=(Number(e.twd)||0);break;}
+        }
+      }
+    }
+  }
+  var seen={};var arr=[];
+  for(var k in map){
+    if(map[k].amount>0&&!seen[map[k].cat]){seen[map[k].cat]=true;arr.push(map[k]);}
+  }
   arr.sort(function(a,b){return b.amount-a.amount;});
   return arr;
+}
+
+
+function switchChart(type){
+  window._curChartType=type;
+  var rptData=window._lastRptData||[];
+  var total=window._lastRptTotal||0;
+  // 更新按鈕樣式
+  var bb=document.getElementById('btn-chart-bar');
+  var bp=document.getElementById('btn-chart-pie');
+  if(bb){bb.className='btn bsm '+(type==='bar'?'bp':'bg2');}
+  if(bp){bp.className='btn bsm '+(type==='pie'?'bp':'bg2');}
+  renderChartArea(type,rptData,total);
+}
+
+function renderChartArea(type,rptData,total){
+  var el=document.getElementById('chart-area');if(!el)return;
+  if(type==='bar'){
+    var max=rptData[0]?rptData[0].amount:1,bh='';
+    for(var i=0;i<rptData.length;i++){
+      var pct=total?Math.round(rptData[i].amount/total*100):0;
+      bh+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:24px;max-width:52px">'+
+        '<div style="font-size:9px;font-weight:800;color:var(--t2)">'+pct+'%</div>'+
+        '<div style="width:80%;height:'+Math.round(rptData[i].amount/max*72)+'px;background:'+rptData[i].color+';border-radius:4px 4px 0 0;min-height:3px"></div>'+
+        '<div style="font-size:14px;line-height:1">'+rptData[i].cat.split(' ')[0]+'</div>'+
+        '</div>';
+    }
+    el.innerHTML='<div style="display:flex;gap:3px;align-items:flex-end;height:106px;padding:4px 2px 0;border-bottom:1.5px solid var(--bd);overflow-x:auto">'+bh+'</div>';
+  } else if(type==='pie'){
+    el.innerHTML='<div style="display:flex;justify-content:center;align-items:center;padding:8px 0;overflow:hidden;width:100%">'+makePieChart(rptData,total)+'</div>';
+  }
+}
+
+function makePieChart(rptData,total){
+  if(!rptData.length)return'';
+  var cx=80,cy=80,r=65,startAngle=-Math.PI/2,svgPaths='';
+  for(var i=0;i<rptData.length;i++){
+    var slice=rptData[i].amount/total;
+    var endAngle=startAngle+slice*2*Math.PI;
+    var x1=cx+r*Math.cos(startAngle),y1=cy+r*Math.sin(startAngle);
+    var x2=cx+r*Math.cos(endAngle),y2=cy+r*Math.sin(endAngle);
+    var large=slice>0.5?1:0;
+    if(slice>=0.9999){
+      svgPaths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+rptData[i].color+'"/>';
+    } else {
+      svgPaths+='<path d="M'+cx+','+cy+' L'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+r+','+r+' 0 '+large+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' Z" fill="'+rptData[i].color+'" opacity="0.85"/>';
+    }
+    startAngle=endAngle;
+  }
+  // 中心白圓（甜甜圈效果）
+  svgPaths+='<circle cx="'+cx+'" cy="'+cy+'" r="36" fill="var(--sf)"/>';
+  svgPaths+='<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-size="10" fill="var(--t3)" font-weight="700">總支出</text>';
+  svgPaths+='<text x="'+cx+'" y="'+(cy+9)+'" text-anchor="middle" font-size="11" fill="var(--tx)" font-weight="800">NT$'+total.toLocaleString()+'</text>';
+  return '<svg viewBox="0 0 160 160" width="160" height="160">'+svgPaths+'</svg>';
 }
 
 function renderRptChart(rptData,labelEl,titleText){
   document.getElementById('rbars').innerHTML='';
   document.getElementById('rlegend').innerHTML='';
   document.getElementById('rcats').innerHTML='';
-  // update card title
   var titleEl=document.querySelector('#rc-report .card div[style*="font-weight:800"]');
   if(titleEl)titleEl.textContent=titleText||'各類支出';
   var total=0;for(var i=0;i<rptData.length;i++)total+=rptData[i].amount;
   if(!rptData.length){document.getElementById('rbars').innerHTML='<div class="empty" style="padding:10px">此期間無支出記錄</div>';return;}
-  var max=rptData[0].amount,bh='';
-  for(var i=0;i<rptData.length;i++)bh+='<div class="brw"><div class="brb" style="height:'+Math.round(rptData[i].amount/max*80)+'px;background:'+rptData[i].color+'"></div><div class="brl">'+rptData[i].cat.split(' ')[0]+'</div></div>';
-  document.getElementById('rbars').innerHTML=bh;
+
+  // 圖表切換按鈕
+  window._curChartType=window._curChartType||'bar';var curChart=window._curChartType;
+  var switchBtns='<div style="display:flex;gap:6px;margin-bottom:10px">'+
+    '<button onclick="switchChart(\'bar\')" id="btn-chart-bar" class="btn bsm '+(curChart==='bar'?'bp':'bg2')+'">📊 長條</button>'+
+    '<button onclick="switchChart(\'pie\')" id="btn-chart-pie" class="btn bsm '+(curChart==='pie'?'bp':'bg2')+'">🥧 圓餅</button>'+
+    '</div>';
+  document.getElementById('rbars').innerHTML=switchBtns+'<div id="chart-area"></div>';
+  document.getElementById('rlegend').innerHTML='';
+
+  // 圖例
   var leg='';for(var i=0;i<rptData.length;i++)leg+='<span class="bdg" style="background:'+rptData[i].color+'22;color:'+rptData[i].color+'">'+rptData[i].cat+'</span>';
   document.getElementById('rlegend').innerHTML=leg;
-  var cats2='';
+
+  // 存起來供切換用
+  window._lastRptData=rptData;window._lastRptTotal=total;
+
+  // 渲染選中的圖表
+  renderChartArea(curChart,rptData,total);
+
+  // 分類明細
+  var cats2='<div style="font-size:11px;font-weight:800;color:var(--t3);margin-bottom:8px">分類明細</div>';
   for(var i=0;i<rptData.length;i++){
     var d=rptData[i],pct=total?Math.round(d.amount/total*100):0;
     cats2+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="font-size:17px">'+d.cat.split(' ')[0]+'</span><div style="flex:1"><div style="font-size:12px;font-weight:800;margin-bottom:3px">'+d.cat.split(' ').slice(1).join(' ')+'</div><div style="background:var(--s2);height:5px;border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+d.color+';border-radius:3px"></div></div></div><div style="text-align:right;min-width:70px"><div style="font-size:12px;font-weight:800">NT$'+d.amount.toLocaleString()+'</div><div style="font-size:10px;color:var(--t3);font-weight:600">'+pct+'%</div></div></div>';
@@ -1686,9 +1777,69 @@ function renderReports(){
     var y=selY,m=selM;
     var rptData=buildCatMap(filtered);
     renderRptChart(rptData,null,'各類支出（'+MONTHS[m]+y+'年）');
+    // 每日趨勢折線圖（SVG）
+    var daysInMonth=new Date(y,m+1,0).getDate();
+    var dailyExp=new Array(daysInMonth+1).fill(0);
+    var dailyInc=new Array(daysInMonth+1).fill(0);
+    filtered.forEach(function(e){
+      var d=parseInt((e.date||'').split('-')[2])||0;
+      if(d>=1&&d<=daysInMonth){
+        if(e.type==='expense')dailyExp[d]+=(Number(e.twd)||0);
+        else if(e.type==='income')dailyInc[d]+=(Number(e.twd)||0);
+      }
+    });
+    var maxD=0;
+    for(var d=1;d<=daysInMonth;d++)maxD=Math.max(maxD,dailyExp[d],dailyInc[d]);
+    if(maxD>0){
+      var W=300,H=70,padL=8,padR=8,padT=6,padB=16;
+      var iW=W-padL-padR,iH=H-padT-padB;
+      var xPos=function(d){return padL+(d-1)/(daysInMonth-1)*iW;};
+      var yPos=function(v){return padT+iH*(1-v/maxD);};
+      // 支出折線
+      var expPts='',incPts='';
+      for(var d=1;d<=daysInMonth;d++){
+        expPts+=(d===1?'M':'L')+xPos(d).toFixed(1)+','+yPos(dailyExp[d]).toFixed(1)+' ';
+        incPts+=(d===1?'M':'L')+xPos(d).toFixed(1)+','+yPos(dailyInc[d]).toFixed(1)+' ';
+      }
+      // X 軸刻度（每5天）
+      var xAxis='';
+      for(var d=1;d<=daysInMonth;d+=5)xAxis+='<text x="'+xPos(d).toFixed(1)+'" y="'+(H-2)+'" text-anchor="middle" font-size="7" fill="var(--t3)">'+d+'</text>';
+      var trendSvg='<div style="margin-top:12px"><div style="font-size:11px;font-weight:800;color:var(--t3);margin-bottom:4px">📈 每日收支趨勢</div>'+
+        '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block">'+
+        '<polyline points="'+expPts.trim().replace(/M|L/g,'')+'" fill="none" stroke="var(--rd)" stroke-width="1.5" stroke-linejoin="round"/>'+
+        '<polyline points="'+incPts.trim().replace(/M|L/g,'')+'" fill="none" stroke="var(--gr)" stroke-width="1.5" stroke-linejoin="round"/>'+
+        xAxis+'</svg>'+
+        '<div style="display:flex;gap:12px;font-size:10px;font-weight:700;margin-top:2px"><span style="color:var(--rd)">─ 支出</span><span style="color:var(--gr)">─ 收入</span></div></div>';
+      document.getElementById('rcats').innerHTML+=trendSvg;
+    }
     // 月份收支小結
     var inc=0,exp=0;
     filtered.forEach(function(e){if(e.type==='income')inc+=e.twd;else if(e.type==='expense')exp+=e.twd;});
+    // 收支比圓餅圖
+    if(inc>0||exp>0){
+      var total2=inc+exp;
+      var expPct=Math.round(exp/total2*100);
+      var incAngle=inc/total2*2*Math.PI;
+      var cx2=40,cy2=40,r2=36;
+      var x1i=cx2+r2*Math.cos(-Math.PI/2),y1i=cy2+r2*Math.sin(-Math.PI/2);
+      var x2i=cx2+r2*Math.cos(-Math.PI/2+incAngle),y2i=cy2+r2*Math.sin(-Math.PI/2+incAngle);
+      var lg2=incAngle>Math.PI?1:0;
+      var pieSvg2='';
+      if(inc===0){pieSvg2='<circle cx="'+cx2+'" cy="'+cy2+'" r="'+r2+'" fill="var(--rd)" opacity="0.8"/>';}
+      else if(exp===0){pieSvg2='<circle cx="'+cx2+'" cy="'+cy2+'" r="'+r2+'" fill="var(--gr)" opacity="0.8"/>';}
+      else{
+        pieSvg2+='<path d="M'+cx2+','+cy2+' L'+x1i.toFixed(1)+','+y1i.toFixed(1)+' A'+r2+','+r2+' 0 '+lg2+',1 '+x2i.toFixed(1)+','+y2i.toFixed(1)+' Z" fill="var(--gr)" opacity="0.85"/>';
+        pieSvg2+='<path d="M'+cx2+','+cy2+' L'+x2i.toFixed(1)+','+y2i.toFixed(1)+' A'+r2+','+r2+' 0 '+(1-lg2)+',1 '+x1i.toFixed(1)+','+y1i.toFixed(1)+' Z" fill="var(--rd)" opacity="0.85"/>';
+      }
+      pieSvg2+='<circle cx="'+cx2+'" cy="'+cy2+'" r="20" fill="var(--sf)"/>';
+      var incomePie='<div style="margin-top:10px;display:flex;align-items:center;gap:12px">'+
+        '<svg viewBox="0 0 72 72" width="72" height="72"><circle cx="36" cy="36" r="34" fill="var(--s2)"/>'+pieSvg2+'</svg>'+
+        '<div><div style="font-size:11px;font-weight:800;color:var(--t3);margin-bottom:4px">收支比</div>'+
+        '<div style="display:flex;gap:8px"><div style="font-size:11px;font-weight:700;color:var(--gr)">■ 收入 '+(total2?Math.round(inc/total2*100):0)+'%</div>'+
+        '<div style="font-size:11px;font-weight:700;color:var(--rd)">■ 支出 '+expPct+'%</div></div>'+
+        '<div style="font-size:10px;color:var(--t3);margin-top:4px">收入 NT$'+inc.toLocaleString()+' / 支出 NT$'+exp.toLocaleString()+'</div></div></div>';
+      document.getElementById('rcats').innerHTML+=incomePie;
+    }
     renderRptSummary([{label:'本月收入',val:inc,cls:'in'},{label:'本月支出',val:exp,cls:'ex'},{label:'結餘',val:inc-exp,cls:'ac'}]);
 
   } else if(tab==='year'){
@@ -1850,10 +2001,22 @@ function renderCalendar(){
   var first=new Date(calY,calM,1).getDay(),days=new Date(calY,calM+1,0).getDate(),prev=new Date(calY,calM,0).getDate();
   var expDates={};for(var i=0;i<expenses.length;i++)expDates[expenses[i].date]=true;
   var td=todayStr(),h='';
+  // 預設選今天
+  if(!selDay)selDay=td;
   for(var i=0;i<first;i++)h+='<div class="cd om">'+(prev-first+1+i)+'</div>';
   for(var d=1;d<=days;d++){var ds=calY+'-'+pad2(calM+1)+'-'+pad2(d),cls='cd';if(ds===td)cls+=' td';if(expDates[ds])cls+=' he';if(ds===selDay)cls+=' sel';h+='<div class="'+cls+'" data-ds="'+ds+'">'+d+'</div>';}
   document.getElementById('cal-days').innerHTML=h;
-  document.getElementById('cal-days').querySelectorAll('.cd:not(.om)').forEach(function(el){el.addEventListener('click',function(){selDay=el.dataset.ds;renderCalendar();var found=expenses.filter(function(e){return e.date===selDay;});var det=document.getElementById('cal-det');if(!found.length){det.innerHTML='<div class="empty">'+selDay+' 無記帳</div>';return;}var fh='';for(var i=0;i<found.length;i++)fh+=expHTML(found[i]);det.innerHTML=fh;bindExpClicks(det);});});
+  // 顯示選中日的記錄
+  var showDayRec=function(ds){
+    var found=expenses.filter(function(e){return e.date===ds;});
+    var det=document.getElementById('cal-det');
+    if(!found.length){det.innerHTML='<div class="empty">'+ds+' 無記帳</div>';return;}
+    var fh='';for(var i=0;i<found.length;i++)fh+=expHTML(found[i]);
+    det.innerHTML=fh;bindExpClicks(det);
+  };
+  // 初始顯示選中日
+  showDayRec(selDay);
+  document.getElementById('cal-days').querySelectorAll('.cd:not(.om)').forEach(function(el){el.addEventListener('click',function(){selDay=el.dataset.ds;renderCalendar();});});
 }
 document.getElementById('cal-prev').addEventListener('click',function(){calM--;if(calM<0){calM=11;calY--;}renderCalendar();updateCalMonthSummary();});
 document.getElementById('cal-next').addEventListener('click',function(){calM++;if(calM>11){calM=0;calY++;}renderCalendar();updateCalMonthSummary();});
