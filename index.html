@@ -354,7 +354,9 @@ input::placeholder{color:var(--t3);font-weight:400}
     <div class="tab" data-type="income">💚 收入</div>
     <div class="tab" data-type="transfer">↔️ 轉帳</div>
   </div>
-  <div class="fr" style="margin-bottom:10px;gap:8px">
+
+  <!-- 分類/子分類 -->
+  <div id="cat-row" class="fr" style="margin-bottom:10px;gap:8px">
     <div class="fg" style="flex:1;margin-bottom:0">
       <label class="fl">🏷️ 分類</label>
       <select id="f-cat" onchange="onCatSelChange()"></select>
@@ -364,7 +366,7 @@ input::placeholder{color:var(--t3);font-weight:400}
       <select id="f-sub"></select>
     </div>
   </div>
-  <div class="fg">
+  <div id="merchant-row" class="fg">
     <label class="fl">🏪 商家</label>
     <div style="position:relative">
       <input type="text" id="f-merchant" placeholder="輸入或搜尋商家…" autocomplete="off" oninput="filterMerchants()"/>
@@ -596,7 +598,7 @@ input::placeholder{color:var(--t3);font-weight:400}
 <div class="ov" id="ov-exp"><div class="modal"><div class="mh"></div><div class="mt" id="ov-exp-t">明細</div><div id="ov-exp-b"></div><div class="mbtns" style="flex-wrap:nowrap"><button class="btn bp bfw" id="ov-edit">✏️ 編輯</button><button class="btn bd2 bsm" style="flex-shrink:0" id="ov-del">🗑</button><button class="btn bg2 bsm" style="flex-shrink:0" id="ov-cls">✕</button></div></div></div>
 <div class="ov" id="ov-proj"><div class="modal"><div class="mh"></div><div class="mt" id="proj-mt">新增旅遊專案</div><div class="fg"><label class="fl">旗幟圖示</label><input type="text" id="pj-ico" placeholder="🇯🇵" style="width:62px"/></div><div class="fg"><label class="fl">專案名稱</label><input type="text" id="pj-name" placeholder="例：日本東京行"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">起始日</label><input type="date" id="pj-st"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">結束日</label><input type="date" id="pj-en"/></div></div><div class="fg"><label class="fl">預設幣別</label><select id="pj-cur"></select></div><div class="fg"><label class="fl">預算 (TWD)</label><input type="number" id="pj-bud" placeholder="25000"/></div><div class="mbtns"><button class="btn bp bfw" id="pj-save">✅ 儲存專案</button><button class="btn bg2" id="pj-cancel">取消</button></div><input type="hidden" id="pj-idx" value=""></div></div>
 <div class="ov" id="ov-wl"><div class="modal"><div class="mh"></div><div class="mt" id="wl-mt">新增錢包</div><div class="fg"><label class="fl">選擇圖示</label><div id="wl-icons" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px"></div></div><div class="fg"><label class="fl">錢包名稱</label><input type="text" id="wl-name" placeholder="例：旅遊現金"/></div><div class="mbtns"><button class="btn bp bfw" id="wl-save">✅ 儲存</button><button class="btn bg2" id="wl-cancel">取消</button></div><input type="hidden" id="wl-idx" value=""></div></div>
-<div class="ov" id="ov-cat"><div class="modal"><div class="mh"></div><div class="mt" id="cat-mt">新增分類</div><div class="fr" style="margin-bottom:10px"><div class="fg" style="width:65px;margin-bottom:0"><label class="fl">圖示</label><input type="text" id="ct-ico" placeholder="🍜"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">名稱</label><input type="text" id="ct-name" placeholder="餐飲"/></div><div class="fg" style="width:55px;margin-bottom:0"><label class="fl">顏色</label><input type="color" id="ct-color" value="#b85e28" style="height:36px;padding:2px"/></div></div><div class="fg"><label class="fl">💰 月預算上限 (TWD)<span style="color:var(--t3);font-size:11px"> 超過 80% 會警告，不設定留空</span></label><input type="text" inputmode="decimal" id="ct-budget" placeholder="例：5000"/></div><div class="fg"><label class="fl">子分類 <span style="font-weight:400;color:var(--t3)">(可新增/刪除/排序)</span></label><div id="sub-editor"></div><button class="btn bg2 bsm" style="margin-top:6px" id="btn-add-sub">＋ 新增子類別</button></div><div class="mbtns"><button class="btn bp bfw" id="cat-save">✅ 儲存分類</button><button class="btn bg2" id="cat-cancel">取消</button></div><input type="hidden" id="ct-idx" value=""></div></div>
+<div class="ov" id="ov-cat"><div class="modal"><div class="mh"></div><div class="mt" id="cat-mt">新增分類</div><div class="fr" style="margin-bottom:10px"><div class="fg" style="width:65px;margin-bottom:0"><label class="fl">圖示</label><input type="text" id="ct-ico" placeholder="🍜"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">名稱</label><input type="text" id="ct-name" placeholder="餐飲"/></div><div class="fg" style="width:55px;margin-bottom:0"><label class="fl">顏色</label><input type="color" id="ct-color" value="#b85e28" style="height:36px;padding:2px"/></div></div><div class="fg"><label class="fl">🏷 適用類型</label><select id="ct-type" style="font-size:13px"><option value="">收入 &amp; 支出（通用）</option><option value="expense">💸 僅支出</option><option value="income">💚 僅收入</option></select></div><div class="fg"><label class="fl">💰 月預算上限 (TWD)<span style="color:var(--t3);font-size:11px"> 超過 80% 會警告，不設定留空</span></label><input type="text" inputmode="decimal" id="ct-budget" placeholder="例：5000"/></div><div class="fg"><label class="fl">子分類 <span style="font-weight:400;color:var(--t3)">(可新增/刪除/排序)</span></label><div id="sub-editor"></div><button class="btn bg2 bsm" style="margin-top:6px" id="btn-add-sub">＋ 新增子類別</button></div><div class="mbtns"><button class="btn bp bfw" id="cat-save">✅ 儲存分類</button><button class="btn bg2" id="cat-cancel">取消</button></div><input type="hidden" id="ct-idx" value=""></div></div>
 <div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390" inputmode="decimal"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fg"><label class="fl">分類</label><select id="fx-cat" onchange="updateFxSub()"></select></div>    <div class="fg"><label class="fl">子分類</label><select id="fx-sub"></select></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
 <div class="ov" id="ov-cur"><div class="modal"><div class="mh"></div><div class="mt" id="cur-mt">新增幣別</div><div class="fg"><label class="fl">代碼</label><input type="text" id="cu-code" placeholder="AUD" style="width:80px"/></div><div class="fg"><label class="fl">名稱</label><input type="text" id="cu-name" placeholder="澳幣"/></div><div class="fg"><label class="fl">對 TWD 匯率</label><input type="number" id="cu-rate" placeholder="21.5" step="0.0001"/></div><div class="mbtns"><button class="btn bp bfw" id="cur-save">✅ 儲存</button><button class="btn bg2" id="cur-cancel">取消</button></div><input type="hidden" id="cu-idx" value=""></div></div>
 <div class="cov" id="cov"><div class="cbox"><div class="cico" id="c-ico">⚠️</div><div class="ctit" id="c-tit">確定嗎？</div><div class="cmsg" id="c-msg">此操作無法復原。</div><div style="display:flex;gap:8px"><button class="btn bd2 bfw" id="c-ok">確認</button><button class="btn bg2 bfw" id="c-cancel">取消</button></div></div></div>
@@ -698,7 +700,7 @@ input::placeholder{color:var(--t3);font-weight:400}
 // ── DEFAULT DATA ─────────────────────────────────────────────
 var DEFAULT_CURRENCIES=[{code:'TWD',name:'台幣',rate:1},{code:'JPY',name:'日圓',rate:0.212},{code:'USD',name:'美元',rate:32.5},{code:'KRW',name:'韓元',rate:0.024},{code:'EUR',name:'歐元',rate:35.2},{code:'GBP',name:'英鎊',rate:41.3},{code:'HKD',name:'港幣',rate:4.16},{code:'SGD',name:'星幣',rate:24.1}];
 var DEFAULT_WALLETS=[{icon:'💳',name:'信用卡',active:true},{icon:'💵',name:'現金',active:true},{icon:'📱',name:'行動支付',active:true},{icon:'🏦',name:'銀行帳戶',active:true}];
-var DEFAULT_CATS=[{icon:'🍜',name:'餐飲',color:'#b85e28',active:true,sub:['早餐','午餐','晚餐','飲料','下午茶']},{icon:'🚇',name:'交通',color:'#1a50a0',active:true,sub:['大眾運輸','計程車','油費','停車費']},{icon:'🏨',name:'住宿',color:'#6030a8',active:true,sub:['飯店','民宿','Airbnb']},{icon:'🛍',name:'購物',color:'#966010',active:true,sub:['服飾','電器','日用品','藥妝']},{icon:'💊',name:'醫療',color:'#2d7a48',active:true,sub:['門診','藥品','保健']},{icon:'🎟',name:'娛樂',color:'#b03030',active:true,sub:['電影','KTV','景點','遊戲']},{icon:'💡',name:'生活費',color:'#7a5228',active:true,sub:['房租','水電','網路','訂閱']},{icon:'📦',name:'其他',color:'#b08258',active:true,sub:[]}];
+var DEFAULT_CATS=[{icon:'🍜',name:'餐飲',color:'#b85e28',active:true,type:'expense',sub:['早餐','午餐','晚餐','飲料','下午茶']},{icon:'🚇',name:'交通',color:'#1a50a0',active:true,type:'expense',sub:['大眾運輸','計程車','油費','停車費']},{icon:'🏨',name:'住宿',color:'#6030a8',active:true,type:'expense',sub:['飯店','民宿','Airbnb']},{icon:'🛍',name:'購物',color:'#966010',active:true,type:'expense',sub:['服飾','電器','日用品','藥妝']},{icon:'💊',name:'醫療',color:'#2d7a48',active:true,type:'expense',sub:['門診','藥品','保健']},{icon:'🎟',name:'娛樂',color:'#b03030',active:true,type:'expense',sub:['電影','KTV','景點','遊戲']},{icon:'💡',name:'生活費',color:'#7a5228',active:true,sub:['房租','水電','網路','訂閱']},{icon:'💰',name:'薪資',color:'#2d7a48',active:true,type:'income',sub:['月薪','獎金','加班費']},{icon:'📈',name:'投資收益',color:'#1a50a0',active:true,type:'income',sub:['股票','基金','利息']},{icon:'📦',name:'其他',color:'#b08258',active:true,sub:[]}];
 var DEFAULT_PROJECTS=[{flag:'🇯🇵',name:'日本東京行',start:'2025-03-15',end:'2025-03-22',currency:'JPY',budget:25000,spent:18420},{flag:'🇰🇷',name:'首爾春遊',start:'2025-05-10',end:'2025-05-15',currency:'KRW',budget:30000,spent:0},{flag:'🇺🇸',name:'紐約商務行',start:'2025-01-05',end:'2025-01-12',currency:'USD',budget:80000,spent:71300}];
 var DEFAULT_FIXED=[{name:'Netflix',amount:390,currency:'TWD',cat:'🎟 娛樂',type:'expense',active:true},{name:'健身房月費',amount:1200,currency:'TWD',cat:'💡 生活費',type:'expense',active:true},{name:'租金收入',amount:8000,currency:'TWD',cat:'💡 生活費',type:'income',active:true}];
 var DEFAULT_EXPENSES=[{id:1,name:'新宿拉麵',cat:'🍜 餐飲',sub:'午餐',wallet:'💳 信用卡',date:'2025-04-25',amount:1200,currency:'JPY',twd:254,note:'超好吃！',type:'expense',billEdited:false},{id:2,name:'SUICA儲值',cat:'🚇 交通',sub:'大眾運輸',wallet:'💵 現金',date:'2025-04-24',amount:3000,currency:'JPY',twd:636,note:'',type:'expense',billEdited:false},{id:3,name:'藥妝採購',cat:'🛍 購物',sub:'藥妝',wallet:'💳 信用卡',date:'2025-04-23',amount:8500,currency:'JPY',twd:1802,note:'松本清',type:'expense',billEdited:true,billNote:'帳單金額 NT$1,750'},{id:4,name:'四月薪資',cat:'💡 生活費',sub:'',wallet:'🏦 銀行帳戶',date:'2025-04-10',amount:38000,currency:'TWD',twd:38000,note:'',type:'income',billEdited:false},{id:5,name:'星巴克拿鐵',cat:'🍜 餐飲',sub:'飲料',wallet:'📱 行動支付',date:'2025-04-22',amount:180,currency:'TWD',twd:180,note:'每天必喝',type:'expense',billEdited:false},{id:6,name:'來回機票',cat:'🚇 交通',sub:'大眾運輸',wallet:'💳 信用卡',date:'2025-04-20',amount:258,currency:'USD',twd:8385,note:'東京來回',type:'expense',billEdited:false}];
@@ -712,6 +714,51 @@ function saveAll(){lsSet('currencies',currencies);lsSet('wallets',wallets);lsSet
 var currencies=lsGet('currencies',DEFAULT_CURRENCIES);
 var wallets=lsGet('wallets',DEFAULT_WALLETS);
 var cats=lsGet('cats',DEFAULT_CATS);
+// ── Migration：自動推斷分類 type ─────────────────────────────
+(function(){
+  var defaultTypeMap={};
+  DEFAULT_CATS.forEach(function(d){if(d.type)defaultTypeMap[d.name]=d.type;});
+
+  var expenseData=lsGet('expenses',[])||[];
+  var catTypeStat={};
+  expenseData.forEach(function(e){
+    var key=(e.cat||'');
+    // 去掉 emoji icon（非 ASCII 字元 + 空白）
+    var name=key.replace(/^[\u{1F000}-\u{1FFFF}\u2600-\u27FF]\s*/u,'').trim()||key.trim();
+    if(!name)return;
+    if(!catTypeStat[name])catTypeStat[name]={income:0,expense:0};
+    if(e.type==='income')catTypeStat[name].income++;
+    else catTypeStat[name].expense++;
+  });
+
+  // 收入關鍵字
+  var incomeKeywords=['薪','資','收入','工資','獎金','投資','利息','股票','基金','租金收入','版稅','分紅','退稅'];
+
+  var changed=false;
+  cats.forEach(function(c){
+    if(c.type!==undefined)return;
+    // 1. 名稱比對 DEFAULT_CATS
+    if(defaultTypeMap[c.name]){c.type=defaultTypeMap[c.name];changed=true;return;}
+    // 2. 歷史記錄統計（threshold 降為 1）
+    var stat=catTypeStat[c.name]||{income:0,expense:0};
+    var total=stat.income+stat.expense;
+    if(total>=1){
+      if(stat.income===0){c.type='expense';changed=true;return;}
+      if(stat.expense===0){c.type='income';changed=true;return;}
+      // 混合：以多數決
+      if(stat.income>stat.expense){c.type='income';}else{c.type='expense';}
+      changed=true;return;
+    }
+    // 3. 關鍵字推斷
+    var nm=c.name;
+    for(var ki=0;ki<incomeKeywords.length;ki++){
+      if(nm.indexOf(incomeKeywords[ki])>=0){c.type='income';changed=true;return;}
+    }
+    // 4. 預設支出
+    c.type='expense';changed=true;
+  });
+  if(changed)lsSet('cats',cats);
+})();
 var projects=lsGet('projects',DEFAULT_PROJECTS);
 var fixedItems=lsGet('fixed',DEFAULT_FIXED);
 var expenses=lsGet('expenses',DEFAULT_EXPENSES);
@@ -720,7 +767,8 @@ var activeThemeIdx=lsGet('theme',0);
 var nextId=lsGet('nextId',100);
 
 // ── STATE ────────────────────────────────────────────────────
-var expType='expense',activeCat=cats[0]?cats[0].name:'餐飲',activeSub='',fxLocked=false,calY=2025,calM=3,selDay='',selWalIco='💳',dragIdx=-1,dragSubIdx=-1,subEditorSubs=[];
+var _now=new Date();
+var expType='expense',activeCat=cats[0]?cats[0].name:'餐飲',activeSub='',fxLocked=false,calY=_now.getFullYear(),calM=_now.getMonth(),selDay='',selWalIco='💳',dragIdx=-1,dragSubIdx=-1,subEditorSubs=[];
 
 // ── THEMES ───────────────────────────────────────────────────
 var themes=[{cls:'',label:'奶茶木質',emoji:'🍵',desc:'溫暖棕色系'},{cls:'t1',label:'櫻花粉',emoji:'🌸',desc:'浪漫粉紅系'},{cls:'t2',label:'天空藍',emoji:'🌊',desc:'清爽藍色系'},{cls:'t3',label:'薄荷綠',emoji:'🌿',desc:'清新綠色系'},{cls:'t4',label:'薰衣草',emoji:'💜',desc:'優雅紫色系'},{cls:'t5',label:'蜜桃橙',emoji:'🍑',desc:'活潑橙色系'},{cls:'t6',label:'檸檬黃',emoji:'🍋',desc:'明亮黃色系'},{cls:'t7',label:'玫瑰紅',emoji:'🌹',desc:'熱情紅色系'},{cls:'t8',label:'木質原色',emoji:'🪵',desc:'質樸木質系'},{cls:'t9',label:'深木夜語',emoji:'🌙',desc:'深色木質系'},{cls:'ta',label:'午夜星空',emoji:'✨',desc:'深色星空系'}];
@@ -734,7 +782,7 @@ function showToast(msg){var el=document.getElementById('toast-el');el.textConten
 window.showToast=showToast;
 
 var confirmCb=null;
-function showConfirm(ico,tit,msg,cb){document.getElementById('c-ico').textContent=ico;document.getElementById('c-tit').textContent=tit;document.getElementById('c-msg').textContent=msg;confirmCb=cb;document.getElementById('cov').classList.add('open');}
+function showConfirm(ico,tit,msg,cb){document.getElementById('c-ico').textContent=ico;document.getElementById('c-tit').textContent=tit;document.getElementById('c-msg').textContent=msg;document.getElementById('c-ok').style.display='';confirmCb=cb;document.getElementById('cov').classList.add('open');}
 document.getElementById('c-ok').addEventListener('click',function(){document.getElementById('cov').classList.remove('open');if(confirmCb)confirmCb();confirmCb=null;});
 document.getElementById('c-cancel').addEventListener('click',function(){document.getElementById('cov').classList.remove('open');confirmCb=null;});
 
@@ -1383,7 +1431,10 @@ function expHTML(e){
   var amtStr=e.currency==='TWD'?'NT$'+e.amount.toLocaleString():e.currency+' '+e.amount.toLocaleString();
   var twdLine=e.currency!=='TWD'?'<div class="etw">≈ NT$'+e.twd.toLocaleString()+'</div>':'';
   var dispName=e.note||e.sub||e.cat||'記帳';
-  return '<div class="ei" data-eid="'+e.id+'"><div class="eico" style="background:'+col+'22">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+e.date+' · '+e.wallet+(e.sub?' · '+e.sub:'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':'-')+amtStr+'</div>'+twdLine+'</div></div>';
+  // 收入用綠色背景，支出用分類顏色背景（更飽和）
+  var icoBg=isIn?'rgba(45,122,72,0.15)':col+'33';
+  var icoStyle='background:'+icoBg+';border:1.5px solid '+(isIn?'rgba(45,122,72,0.25)':col+'55')+';box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)';
+  return '<div class="ei" data-eid="'+e.id+'"><div class="eico" style="'+icoStyle+'">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+e.date+' · '+e.wallet+(e.sub?' · '+e.sub:'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':'-')+amtStr+'</div>'+twdLine+'</div></div>';
 }
 function bindExpClicks(container){container.querySelectorAll('.ei').forEach(function(el){el.addEventListener('click',function(){viewExp(parseInt(el.dataset.eid));});});}
 
@@ -1403,7 +1454,7 @@ function viewExp(id){
 function renderAddPage(){
   fillSel('f-cur',currencies);fillWalSel('f-wallet');fillProjSel('f-proj');
   if(!document.getElementById('f-date').value)document.getElementById('f-date').value=todayStr();
-  renderCatChips();
+  applyExpTypeUI();
 }
 function renderCatChips(){
   // 相容舊呼叫，直接轉 renderCatSelects
@@ -1413,23 +1464,21 @@ function renderCatSelects(){
   var catSel=document.getElementById('f-cat');
   var subSel=document.getElementById('f-sub');
   if(!catSel||!subSel)return;
-  // 填充分類選單
-  var ch='';
+  var needIncome=(expType==='income');
   var activeCats=cats.filter(function(c){
     if(c.active===false)return false;
-    // 如果分類有設定 type，只顯示符合的；沒設定的全部顯示
-    if(c.type&&c.type!==expType)return false;
-    return true;
+    if(!c.type)return true;// 通用分類永遠顯示
+    if(needIncome)return c.type==='income';
+    return c.type==='expense';
   });
   if(activeCats.length===0)activeCats=cats.filter(function(c){return c.active!==false;});
+  var ch='';
   for(var i=0;i<activeCats.length;i++){
-    var selected=activeCats[i].name===activeCat?'selected':'';
-    ch+='<option value="'+activeCats[i].name+'" '+selected+'>'+activeCats[i].icon+' '+activeCats[i].name+'</option>';
+    var sel=activeCats[i].name===activeCat?'selected':'';
+    ch+='<option value="'+activeCats[i].name+'" '+sel+'>'+activeCats[i].icon+' '+activeCats[i].name+'</option>';
   }
   catSel.innerHTML=ch||'<option>（無分類）</option>';
-  // 確保 activeCat 同步
   if(catSel.value)activeCat=catSel.value;
-  // 填充子分類選單
   updateSubSel();
 }
 function updateSubSel(){
@@ -1448,12 +1497,61 @@ function updateSubSel(){
   subSel.innerHTML=sh;
   if(subSel.value)activeSub=subSel.value;
 }
+function quickSetCatType(){
+  var catSelEl=document.getElementById('f-cat');
+  var catName=catSelEl?catSelEl.value:'';
+  if(!catName){showToast('⚠️ 請先選擇分類');return;}
+  var catIdx=-1;
+  for(var i=0;i<cats.length;i++){if(cats[i].name===catName){catIdx=i;break;}}
+  if(catIdx<0){showToast('⚠️ 找不到此分類');return;}
+  var c=cats[catIdx];
+  var cur=c.type||'';
+  var opts=[{v:'',l:'🔄 通用（收入＋支出都顯示）'},{v:'expense',l:'💸 僅支出'},{v:'income',l:'💚 僅收入'}];
+  var h='<div style="padding:4px 0"><div style="font-size:13px;font-weight:800;margin-bottom:10px">設定「'+c.icon+' '+c.name+'」的適用類型</div>';
+  opts.forEach(function(o){
+    var sel=cur===o.v;
+    h+='<button type="button" onclick="applyQuickCatType('+catIdx+',\''+o.v+'\')" style="display:block;width:100%;text-align:left;padding:9px 12px;margin-bottom:6px;border-radius:var(--rs);border:2px solid '+(sel?'var(--ac)':'var(--bd)')+';background:'+(sel?'var(--al)':'var(--sf)')+';font-size:13px;font-weight:700;cursor:pointer;color:var(--tx)">'+o.l+(sel?' ✓':'')+'</button>';
+  });
+  h+='<div style="font-size:10.5px;color:var(--t3);margin-top:6px;font-weight:600">設定後切換收入/支出頁籤時，此分類會自動篩選顯示</div></div>';
+  document.getElementById('c-ico').textContent='🏷️';
+  document.getElementById('c-tit').textContent='分類適用類型';
+  document.getElementById('c-msg').innerHTML=h;
+  document.getElementById('c-ok').style.display='none';
+  document.getElementById('cov').classList.add('open');
+}
+function applyQuickCatType(catIdx,typeVal){
+  cats[catIdx].type=typeVal||undefined;
+  saveAll();
+  document.getElementById('cov').classList.remove('open');
+  document.getElementById('c-ok').style.display='';
+  renderCatSelects();
+  showToast('✅ 已設定分類類型，切換頁籤即可篩選');
+}
+
 function onCatSelChange(){
   var catSel=document.getElementById('f-cat');
   if(catSel){activeCat=catSel.value;activeSub='';}
   updateSubSel();
 }
-document.getElementById('type-tabs').addEventListener('click',function(e){var t=e.target;if(!t.dataset.type)return;expType=t.dataset.type;document.querySelectorAll('#type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.type===expType);});renderCatSelects();});
+document.getElementById('type-tabs').addEventListener('click',function(e){
+  var t=e.target;
+  while(t&&t!==this){if(t.dataset&&t.dataset.type)break;t=t.parentElement;}
+  if(!t||!t.dataset||!t.dataset.type)return;
+  expType=t.dataset.type;
+  document.querySelectorAll('#type-tabs .tab').forEach(function(x){
+    x.classList.toggle('on',x.dataset.type===expType);
+  });
+  activeCat='';
+  applyExpTypeUI();
+});
+
+function applyExpTypeUI(){
+  var catRow=document.getElementById('cat-row');
+  var merchantRow=document.getElementById('merchant-row');
+  if(catRow)catRow.style.display='flex';
+  if(merchantRow)merchantRow.style.display='';
+  renderCatSelects();
+}
 
 function calcFX(){
   var amt=parseFloat(document.getElementById('f-amt').value)||0,code=document.getElementById('f-cur').value,rate=1;
@@ -1535,16 +1633,33 @@ document.getElementById('submit-btn').addEventListener('click',function(){
   var twdTxt=document.getElementById('fxtwd').textContent.replace('NT$','').replace(/,/g,'');
   var twd=fxLocked&&twdTxt?parseInt(twdTxt):Math.round(amt*rate);
   var cat=null;
-  // 從 select 讀取最新的分類和子分類
+  var catStr='↔️ 轉帳';
+  var walletVal=document.getElementById('f-wallet').value;
+  if(expType==='transfer'){
+    // 轉帳：使用轉出/轉入錢包
+    var fromWal=document.getElementById('f-from-wallet');
+    var toWal=document.getElementById('f-to-wallet');
+    walletVal=fromWal?fromWal.value:walletVal;
+    var toWalletVal=toWal?toWal.value:'';
+    if(walletVal===toWalletVal){showToast('⚠️ 轉出與轉入帳戶不能相同');return;}
+    catStr='↔️ 轉帳';
+    var obj={id:eid?parseInt(eid):nextId++,name:note||('轉帳 '+walletVal+'→'+toWalletVal),cat:catStr,sub:'',wallet:walletVal,toWallet:toWalletVal,date:date,amount:amt,currency:code,twd:twd,note:note,type:'transfer',billEdited:false,billNote:'',merchant:'',proj:proj};
+    if(eid){for(var i=0;i<expenses.length;i++){if(expenses[i].id===parseInt(eid)){expenses[i]=obj;break;}}showToast('💾 已儲存修改');}
+    else{expenses.unshift(obj);showToast('✅ 轉帳記錄完成！');}
+    lsSet('nextId',nextId);saveAll();resetAdd();gotoPage('home');
+    setTimeout(function(){pushToGAS();},800);
+    return;
+  }
+  // 支出 / 收入
   var catSelEl=document.getElementById('f-cat');
   var subSelEl=document.getElementById('f-sub');
   if(catSelEl&&catSelEl.value)activeCat=catSelEl.value;
   if(subSelEl)activeSub=subSelEl.value||'';
   for(var i=0;i<cats.length;i++){if(cats[i].name===activeCat){cat=cats[i];break;}}
-  var catStr=cat?cat.icon+' '+cat.name:'📦 其他';
+  catStr=cat?cat.icon+' '+cat.name:'📦 其他';
   var billAmt=document.getElementById('f-bill').value;var billEdited=!!billAmt&&parseFloat(billAmt)>0;
   var eid=document.getElementById('f-eid').value;
-  var merchant=document.getElementById('f-merchant').value.trim();var proj=document.getElementById('f-proj').value||'';var obj={id:eid?parseInt(eid):nextId++,name:note||catStr,cat:catStr,sub:activeSub,wallet:document.getElementById('f-wallet').value,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:billEdited,billNote:billEdited?'帳單金額 NT$'+billAmt:'',merchant:merchant,proj:proj};
+  var merchant=document.getElementById('f-merchant').value.trim();var proj=document.getElementById('f-proj').value||'';var obj={id:eid?parseInt(eid):nextId++,name:note||catStr,cat:catStr,sub:activeSub,wallet:walletVal,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:billEdited,billNote:billEdited?'帳單金額 NT$'+billAmt:'',merchant:merchant,proj:proj};
   if(eid){for(var i=0;i<expenses.length;i++){if(expenses[i].id===parseInt(eid)){expenses[i]=obj;break;}}showToast('💾 已儲存修改');}
   else{expenses.unshift(obj);showToast('✅ 記帳成功！');}
   lsSet('nextId',nextId);saveAll();resetAdd();gotoPage('home');
@@ -1553,25 +1668,25 @@ document.getElementById('submit-btn').addEventListener('click',function(){
 });
 document.getElementById('cancel-btn').addEventListener('click',function(){resetAdd();gotoPage('home');});
 
-function resetAdd(){document.getElementById('f-eid').value='';document.getElementById('add-ttl').textContent='✏️ 新增記帳';document.getElementById('submit-btn').textContent='✅ 確認新增';document.getElementById('f-amt').value='';document.getElementById('f-note').value='';document.getElementById('f-bill').value='';document.getElementById('f-date').value='';document.getElementById('fxb').style.display='none';document.getElementById('billb').style.display='none';document.getElementById('magic-res').style.display='none';document.getElementById('magic-wrap').classList.remove('open');fxLocked=false;magicOpen=false;activeCat=cats[0]?cats[0].name:'餐飲';activeSub='';expType='expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});}
-function editExp(id){var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}if(!e)return;gotoPage('add');document.getElementById('add-ttl').textContent='✏️ 編輯記帳';document.getElementById('submit-btn').textContent='💾 儲存修改';document.getElementById('f-eid').value=id;document.getElementById('f-date').value=e.date;document.getElementById('f-amt').value=e.amount;document.getElementById('f-note').value=e.note||'';document.getElementById('f-merchant').value=e.merchant||'';var catFull=e.cat||'';var catFound=false;for(var ci=0;ci<cats.length;ci++){if(cats[ci].name===catFull||(cats[ci].icon+' '+cats[ci].name)===catFull){activeCat=cats[ci].name;catFound=true;break;}}if(!catFound)activeCat=catFull.split(' ').slice(1).join(' ')||catFull;activeSub=e.sub||'';expType=e.type;renderAddPage();document.getElementById('f-merchant').value=e.merchant||'';document.getElementById('f-cur').value=e.currency;
-  // 設定錢包：相容「🏦 轉帳」和「轉帳」兩種格式
-  var walletFull=e.wallet||'';
-  var walSel=document.getElementById('f-wallet');
-  if(walSel){
-    var walOpts=walSel.options;
-    var walFound=false;
-    for(var wi=0;wi<walOpts.length;wi++){
-      if(walOpts[wi].value===walletFull){walSel.selectedIndex=wi;walFound=true;break;}
-    }
-    if(!walFound){
-      // 嘗試只比對名稱部分
-      for(var wi=0;wi<walOpts.length;wi++){
-        if(walOpts[wi].value.indexOf(walletFull)>=0||walletFull.indexOf(walOpts[wi].value.split(' ').slice(1).join(' '))>=0){walSel.selectedIndex=wi;break;}
-      }
-    }
+function resetAdd(){document.getElementById('f-eid').value='';document.getElementById('add-ttl').textContent='✏️ 新增記帳';document.getElementById('submit-btn').textContent='✅ 確認新增';document.getElementById('f-amt').value='';document.getElementById('f-note').value='';document.getElementById('f-bill').value='';document.getElementById('f-date').value='';document.getElementById('fxb').style.display='none';document.getElementById('billb').style.display='none';document.getElementById('magic-res').style.display='none';document.getElementById('magic-wrap').classList.remove('open');fxLocked=false;magicOpen=false;activeCat=cats[0]?cats[0].name:'';activeSub='';expType='expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});applyExpTypeUI();}
+function editExp(id){var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}if(!e)return;gotoPage('add');document.getElementById('add-ttl').textContent='✏️ 編輯記帳';document.getElementById('submit-btn').textContent='💾 儲存修改';document.getElementById('f-eid').value=id;document.getElementById('f-date').value=e.date;document.getElementById('f-amt').value=e.amount;document.getElementById('f-note').value=e.note||'';document.getElementById('f-merchant').value=e.merchant||'';expType=e.type||'expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.type===expType);});
+  applyExpTypeUI();
+  if(expType==='transfer'){
+    var fromSel=document.getElementById('f-from-wallet');
+    var toSel=document.getElementById('f-to-wallet');
+    if(fromSel)fromSel.value=e.wallet||'';
+    if(toSel)toSel.value=e.toWallet||'';
+  } else {
+    var catFull=e.cat||'';var catFound=false;
+    for(var ci=0;ci<cats.length;ci++){if(cats[ci].name===catFull||(cats[ci].icon+' '+cats[ci].name)===catFull){activeCat=cats[ci].name;catFound=true;break;}}
+    if(!catFound)activeCat=catFull.split(' ').slice(1).join(' ')||catFull;
+    activeSub=e.sub||'';
+    renderCatSelects();
+    var walSel=document.getElementById('f-wallet');
+    if(walSel){var walletFull=e.wallet||'';var found=false;for(var wi=0;wi<walSel.options.length;wi++){if(walSel.options[wi].value===walletFull){walSel.selectedIndex=wi;found=true;break;}}if(!found){for(var wi=0;wi<walSel.options.length;wi++){if(walSel.options[wi].value.indexOf(walletFull)>=0||walletFull.indexOf(walSel.options[wi].value.split(' ').slice(1).join(' '))>=0){walSel.selectedIndex=wi;break;}}}}
   }
-  document.querySelectorAll('#type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.type===e.type);});calcFX();}
+  document.getElementById('f-cur').value=e.currency;calcFX();
+}
 
 // ── PROJECTS ─────────────────────────────────────────────────
 function renderProjects(){
@@ -2246,7 +2361,9 @@ function saveCatBatch(){
     var sub=subsInp?subsInp.value.split(',').map(function(s){return s.trim();}).filter(Boolean):cats[i].sub;
     var budInp=row.querySelector('.bi-budget');
     var budget=budInp&&budInp.value?parseFloat(budInp.value)||undefined:undefined;
-    if(name)cats[i]=Object.assign({},cats[i],{icon:ico,name:name,color:color,sub:sub,subs:sub,budget:budget});
+    var typeInp=row.querySelector('.bi-type');
+    var typeVal=typeInp?typeInp.value||undefined:cats[i].type;
+    if(name)cats[i]=Object.assign({},cats[i],{icon:ico,name:name,color:color,sub:sub,subs:sub,budget:budget,type:typeVal});
   });
   saveAll();catBatchMode=false;
   document.getElementById('btn-cat-batch').style.display='flex';
@@ -2260,7 +2377,10 @@ function renderCatSettings(){
     var c=cats[i];
     if(catBatchMode){
       // Batch edit mode: inline inputs including sub-cats
-      var subsVal=c.sub.join(', ');
+      var subsVal=(c.subs||c.sub||[]).join(', ');
+      var typeOpts=['','expense','income'];
+      var typeLabels=['通用（收入+支出）','💸 僅支出','💚 僅收入'];
+      var typeSelHtml=typeOpts.map(function(v,ti){return'<option value="'+v+'"'+(( c.type||'')=== v?' selected':'')+'>'+typeLabels[ti]+'</option>';}).join('');
       h+='<div class="cat-batch-row di" data-bi="'+i+'" style="flex-wrap:wrap;gap:6px;padding:9px 10px">';
       h+='<div style="display:flex;gap:6px;width:100%;align-items:center">';
       h+='<input class="bi-ico" value="'+c.icon+'" style="width:46px;text-align:center;font-size:16px;padding:4px" title="圖示"/>';
@@ -2268,27 +2388,85 @@ function renderCatSettings(){
       h+='<input type="color" class="bi-color" value="'+c.color+'" style="width:36px;height:36px;padding:2px;border-radius:6px;cursor:pointer" title="顏色"/>';
       h+='<label class="sw" style="align-self:center"><input type="checkbox" '+(c.active?'checked':'')+' data-cact="'+i+'"><span class="sws"></span></label>';
       h+='</div>';
-      h+='<div style="width:100%"><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:3px">子分類（用逗號分隔）</div>';
-      h+='<input class="bi-sub" value="'+subsVal.replace(/"/g,'&quot;')+'" style="width:100%;font-size:12px" placeholder="早餐, 午餐, 晚餐" title="子分類，用逗號分隔"/></div>';
+      h+='<div style="width:100%"><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:3px">🏷 適用類型</div>';
+      h+='<select class="bi-type" style="width:100%;font-size:12px;padding:5px 8px">'+typeSelHtml+'</select></div>';
+      h+='<div style="width:100%" data-batch-sub="'+i+'"><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:3px">子分類（點 × 刪除，輸入後 Enter 新增）</div>';
+      // hidden input to store CSV value for saveCatBatch
+      h+='<input class="bi-sub" type="hidden" value="'+subsVal.replace(/"/g,'&quot;')+'"/>';
+      // chips display
+      h+='<div class="batch-sub-chips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px">';
+      var subsArr=(c.subs||c.sub||[]);
+      subsArr.forEach(function(s,si){
+        h+='<span style="display:inline-flex;align-items:center;gap:3px;background:var(--al);border:1.5px solid var(--ac);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;color:var(--ac)">'
+          +s+'<button type="button" data-rm-sub="'+si+'" style="background:none;border:none;color:var(--ac);cursor:pointer;font-size:11px;padding:0;line-height:1;margin-left:1px">×</button></span>';
+      });
+      h+='</div>';
+      h+='<div style="display:flex;gap:5px"><input class="batch-sub-new" placeholder="輸入子分類名稱…" style="flex:1;font-size:12px;padding:5px 8px"/><button type="button" class="batch-sub-add btn bg2 bxs">＋ 新增</button></div></div>';
       h+='<div style="width:100%"><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:3px">💰 月預算上限 (TWD)（留空=不設定）</div>';
       h+='<input class="bi-budget" value="'+(c.budget||'')+'" style="width:100%;font-size:12px" placeholder="例：5000" inputmode="decimal" title="月預算上限"/></div>';
       h+='</div>';
     } else {
-      var subs=c.sub.length?'<div style="padding-left:28px;margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">'+c.sub.map(function(s){return'<span class="schip">'+s+'</span>';}).join('')+'</div>':'';
+      var subs=(c.subs||c.sub||[]);
+      var subChips=subs.length?'<div style="padding-left:28px;margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">'+subs.map(function(s){return'<span class="schip">'+s+'</span>';}).join('')+'</div>':'';
+      var typeBadge=c.type==='expense'?'<span style="font-size:9px;background:var(--rl);color:var(--rd);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">💸支出</span>':c.type==='income'?'<span style="font-size:9px;background:var(--gl);color:var(--gr);padding:1px 5px;border-radius:4px;font-weight:700;margin-left:4px">💚收入</span>':'';
       h+='<div class="di" draggable="true" style="flex-direction:column;align-items:stretch" data-ci="'+i+'">';
       h+='<div style="display:flex;align-items:center;gap:7px"><span class="dh">⠿</span>';
       h+='<div style="width:9px;height:9px;border-radius:50%;background:'+c.color+';flex-shrink:0"></div>';
       h+='<span style="font-size:17px">'+c.icon+'</span>';
-      h+='<span style="flex:1;font-size:13px;font-weight:700">'+c.name+'</span>';
+      h+='<span style="flex:1;font-size:13px;font-weight:700">'+c.name+typeBadge+'</span>';
       h+='<label class="sw"><input type="checkbox" '+(c.active?'checked':'')+' data-cact="'+i+'"><span class="sws"></span></label>';
       h+='<button class="bico" data-cedit="'+i+'">✏️</button>';
-      h+='<button class="bico" style="color:var(--rd)" data-cdel="'+i+'">🗑</button></div>'+subs+'</div>';
+      h+='<button class="bico" style="color:var(--rd)" data-cdel="'+i+'">🗑</button></div>'+subChips+'</div>';
     }
   }
   el.innerHTML=h;
   el.querySelectorAll('[data-cact]').forEach(function(cb){cb.addEventListener('change',function(){cats[parseInt(cb.dataset.cact)].active=cb.checked;saveAll();});});
   el.querySelectorAll('[data-cedit]').forEach(function(btn){btn.addEventListener('click',function(){openCatModal(parseInt(btn.dataset.cedit));});});
   el.querySelectorAll('[data-cdel]').forEach(function(btn){btn.addEventListener('click',function(){var i2=parseInt(btn.dataset.cdel);showConfirm('🗑️','確定刪除分類？','歷史記帳記錄仍保留分類名稱，但無法再選取此分類。',function(){cats[i2].active=false;saveAll();renderCatSettings();renderCatChips();showToast('⚠️ 分類已停用');});});});
+  // batch sub chips interactions
+  el.querySelectorAll('[data-batch-sub]').forEach(function(wrap){
+    var catIdx=parseInt(wrap.dataset.batchSub);
+    var hiddenInp=wrap.querySelector('.bi-sub');
+    var chipsEl=wrap.querySelector('.batch-sub-chips');
+    var newInp=wrap.querySelector('.batch-sub-new');
+    var addBtn=wrap.querySelector('.batch-sub-add');
+    function getSubsFromChips(){
+      var spans=chipsEl.querySelectorAll('span');
+      var arr=[];
+      spans.forEach(function(sp){arr.push(sp.firstChild.textContent.trim());});
+      return arr;
+    }
+    function updateHidden(){hiddenInp.value=getSubsFromChips().join(', ');}
+    function rebuildChips(arr){
+      var html='';
+      arr.forEach(function(s,si){
+        html+='<span style="display:inline-flex;align-items:center;gap:3px;background:var(--al);border:1.5px solid var(--ac);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;color:var(--ac)">'
+          +s+'<button type="button" data-rm-sub="'+si+'" style="background:none;border:none;color:var(--ac);cursor:pointer;font-size:11px;padding:0;line-height:1;margin-left:1px">×</button></span>';
+      });
+      chipsEl.innerHTML=html;
+      chipsEl.querySelectorAll('[data-rm-sub]').forEach(function(rmb){
+        rmb.addEventListener('click',function(){
+          var arr2=getSubsFromChips();
+          arr2.splice(parseInt(rmb.dataset.rmSub),1);
+          rebuildChips(arr2);updateHidden();
+        });
+      });
+    }
+    // init rm buttons
+    chipsEl.querySelectorAll('[data-rm-sub]').forEach(function(rmb){
+      rmb.addEventListener('click',function(){
+        var arr=getSubsFromChips();
+        arr.splice(parseInt(rmb.dataset.rmSub),1);
+        rebuildChips(arr);updateHidden();
+      });
+    });
+    function addSub(){
+      var v=(newInp.value||'').trim();if(!v)return;
+      var arr=getSubsFromChips();arr.push(v);rebuildChips(arr);updateHidden();newInp.value='';newInp.focus();
+    }
+    addBtn.addEventListener('click',addSub);
+    newInp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addSub();}});
+  });
   // bind 查看明細 buttons
   el.querySelectorAll('[data-proj-det]').forEach(function(btn){
     btn.addEventListener('click',function(e){
@@ -2317,7 +2495,7 @@ function renderCatSettings(){
   });
   el.querySelectorAll('.di').forEach(function(item){item.addEventListener('dragstart',function(){dragIdx=parseInt(item.dataset.ci);});item.addEventListener('dragover',function(e){e.preventDefault();});item.addEventListener('drop',function(){var ti=parseInt(item.dataset.ci);if(dragIdx>=0&&dragIdx!==ti){var c2=cats.splice(dragIdx,1)[0];cats.splice(ti,0,c2);dragIdx=-1;saveAll();renderCatSettings();}});});
 }
-function openCatModal(idx){var isEdit=idx!==undefined;document.getElementById('cat-mt').textContent=isEdit?'編輯分類':'新增分類';document.getElementById('ct-idx').value=isEdit?idx:'';var c=isEdit?cats[idx]:{icon:'📦',name:'',color:'#b85e28',sub:[]};document.getElementById('ct-ico').value=c.icon;document.getElementById('ct-name').value=c.name;document.getElementById('ct-color').value=c.color;subEditorSubs=(c.subs||c.sub||[]).slice();renderSubEditor();var budInp=document.getElementById('ct-budget');if(budInp)budInp.value=c.budget||'';openOv('ov-cat');}
+function openCatModal(idx){var isEdit=idx!==undefined;document.getElementById('cat-mt').textContent=isEdit?'編輯分類':'新增分類';document.getElementById('ct-idx').value=isEdit?idx:'';var c=isEdit?cats[idx]:{icon:'📦',name:'',color:'#b85e28',sub:[]};document.getElementById('ct-ico').value=c.icon;document.getElementById('ct-name').value=c.name;document.getElementById('ct-color').value=c.color;var typeEl=document.getElementById('ct-type');if(typeEl)typeEl.value=c.type||'';subEditorSubs=(c.subs||c.sub||[]).slice();renderSubEditor();var budInp=document.getElementById('ct-budget');if(budInp)budInp.value=c.budget||'';openOv('ov-cat');}
 function renderSubEditor(){
   var el=document.getElementById('sub-editor'),h='';
   for(var i=0;i<subEditorSubs.length;i++)h+='<div class="di" draggable="true" style="padding:6px 10px;margin-bottom:4px" data-si="'+i+'"><span class="dh">⠿</span><input type="text" value="'+subEditorSubs[i].replace(/"/g,'&quot;')+'" style="flex:1;background:transparent;border:none;border-bottom:1px solid var(--bd);font-size:12.5px;padding:0;color:var(--tx);font-weight:600" data-sfi="'+i+'"/><button class="bico" style="color:var(--rd)" data-srm="'+i+'">✕</button></div>';
@@ -2358,6 +2536,7 @@ document.getElementById('cat-save').addEventListener('click',function(){
   var ico=document.getElementById('ct-ico').value||'📦',name=document.getElementById('ct-name').value.trim(),color=document.getElementById('ct-color').value;
   if(!name){showToast('⚠️ 請填寫分類名稱');return;}
   var sub=subEditorSubs.filter(function(s){return s.trim();}).map(function(s){return s.trim();});
+  var typeVal=document.getElementById('ct-type')?document.getElementById('ct-type').value||undefined:undefined;
   var idx=document.getElementById('ct-idx').value;
   if(idx!==''){
     var ii=parseInt(idx);
@@ -2392,10 +2571,10 @@ document.getElementById('cat-save').addEventListener('click',function(){
       showToast('✅ 分類已儲存');
     }
     var bud=parseFloat(document.getElementById('ct-budget').value)||0;
-    cats[ii]=Object.assign({},cats[ii],{icon:ico,name:name,color:color,subs:sub,sub:sub,budget:bud||undefined});
+    cats[ii]=Object.assign({},cats[ii],{icon:ico,name:name,color:color,subs:sub,sub:sub,budget:bud||undefined,type:typeVal});
   } else {
     var bud2=parseFloat(document.getElementById('ct-budget').value)||0;
-    cats.push({icon:ico,name:name,color:color,active:true,subs:sub,sub:sub,budget:bud2||undefined});
+    cats.push({icon:ico,name:name,color:color,active:true,subs:sub,sub:sub,budget:bud2||undefined,type:typeVal});
     showToast('✅ 分類已儲存');
   }
   saveAll();closeOv('ov-cat');renderCatSettings();renderCatChips();
@@ -2722,7 +2901,7 @@ setInterval(function(){saveAll();document.getElementById('sync-badge').textConte
 <script>
 if('serviceWorker'in navigator){
   window.addEventListener('load',function(){
-    var sw="const CACHE='mb-v1';const URLS=['./',location.href];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(URLS))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));";
+    var sw="const CACHE='mb-v5';const URLS=['./',location.href];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(URLS)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!=='mb-v5').map(k=>caches.delete(k))))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));";
     var blob=new Blob([sw],{type:'application/javascript'});
     navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(function(){});
   });
