@@ -375,7 +375,7 @@ input::placeholder{color:var(--t3);font-weight:400}
   </div>
   <div class="fg"><label class="fl">📅 日期</label><input type="date" id="f-date"/></div>
   <div class="fr" style="margin-bottom:10px">
-    <div class="fg" style="flex:2;margin-bottom:0"><label class="fl">💰 金額</label><div style="display:flex;gap:6px;align-items:center"><input type="text" id="f-amt" placeholder="0" style="flex:1" inputmode="decimal" pattern="[0-9.]*" autocomplete="off"/><button type="button" onclick="openCalc()" style="background:var(--s3);border:none;border-radius:var(--rs);padding:8px 10px;font-size:18px;cursor:pointer;line-height:1">🖩</button></div></div>
+    <div class="fg" style="flex:2;margin-bottom:0"><label class="fl">💰 金額</label><div style="display:flex;gap:6px;align-items:center"><input type="text" id="f-amt" placeholder="0" style="flex:1" inputmode="decimal" pattern="[0-9.]*" autocomplete="off"/><button type="button" onclick="openCalc()" style="background:var(--s3);border:1.5px solid var(--bd);border-radius:var(--rs);padding:6px 8px;cursor:pointer;line-height:1;color:var(--tx);flex-shrink:0;display:flex;align-items:center;justify-content:center" title="計算機"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3" ry="3"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10" stroke-width="3"/><line x1="12" y1="10" x2="12" y2="10" stroke-width="3"/><line x1="16" y1="10" x2="16" y2="10" stroke-width="3"/><line x1="8" y1="14" x2="8" y2="14" stroke-width="3"/><line x1="12" y1="14" x2="12" y2="14" stroke-width="3"/><line x1="16" y1="14" x2="16" y2="14" stroke-width="3"/><line x1="8" y1="18" x2="8" y2="18" stroke-width="3"/><line x1="12" y1="18" x2="12" y2="18" stroke-width="3"/><line x1="16" y1="18" x2="16" y2="18" stroke-width="3"/></svg></button></div></div>
     <div class="fg" style="flex:1.3;margin-bottom:0"><label class="fl">幣別</label><select id="f-cur"></select></div>
   </div>
   <div class="fxb" id="fxb" style="display:none">
@@ -400,6 +400,7 @@ input::placeholder{color:var(--t3);font-weight:400}
   <div style="display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap">
     <button class="btn bg2 bsm" id="btn-fixed">⚡ 套用固定收支</button>
     <button class="btn bg2 bsm" id="btn-copy">📋 複製上一筆</button>
+    <button class="btn bg2 bsm" id="btn-again">➕ 再記一筆</button>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
     <button class="btn bp bfw" id="submit-btn">✅ 確認新增</button>
@@ -1625,6 +1626,38 @@ document.getElementById('btn-fixed').addEventListener('click',function(){
   });
 });
 document.getElementById('btn-copy').addEventListener('click',function(){if(!expenses.length){showToast('⚠️ 沒有可複製的記錄');return;}var e=expenses[0];document.getElementById('f-amt').value=e.amount;document.getElementById('f-note').value=e.note||e.name;document.getElementById('f-cur').value=e.currency;var cf=e.cat||'';var cfound=false;for(var ci=0;ci<cats.length;ci++){if(cats[ci].name===cf||(cats[ci].icon+' '+cats[ci].name)===cf){activeCat=cats[ci].name;cfound=true;break;}}if(!cfound)activeCat=cf.split(' ').slice(1).join(' ')||cf;activeSub=e.sub||'';renderCatChips();calcFX();showToast('📋 已複製上一筆');});
+
+document.getElementById('btn-again').addEventListener('click',function(){
+  // 儲存目前這筆，然後清空金額/備註留在記帳頁繼續
+  var amt=parseFloat(document.getElementById('f-amt').value)||0;
+  var date=document.getElementById('f-date').value;
+  if(!amt){showToast('⚠️ 請先輸入金額再記下一筆');return;}
+  if(!date){showToast('⚠️ 請選擇日期');return;}
+  var code=document.getElementById('f-cur').value;
+  var rate=1;for(var i=0;i<currencies.length;i++){if(currencies[i].code===code){rate=currencies[i].rate;break;}}
+  var twdTxt=document.getElementById('fxtwd').textContent.replace('NT$','').replace(/,/g,'');
+  var twd=fxLocked&&twdTxt?parseInt(twdTxt):Math.round(amt*rate);
+  var catSelEl=document.getElementById('f-cat');
+  var subSelEl=document.getElementById('f-sub');
+  if(catSelEl&&catSelEl.value)activeCat=catSelEl.value;
+  if(subSelEl)activeSub=subSelEl.value||'';
+  var cat=null;for(var i=0;i<cats.length;i++){if(cats[i].name===activeCat){cat=cats[i];break;}}
+  var catStr=expType==='transfer'?'↔️ 轉帳':cat?cat.icon+' '+cat.name:'📦 其他';
+  var note=document.getElementById('f-note').value;
+  var merchant=document.getElementById('f-merchant').value.trim();
+  var proj=document.getElementById('f-proj').value||'';
+  var obj={id:nextId++,name:note||catStr,cat:catStr,sub:activeSub,wallet:document.getElementById('f-wallet').value,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:false,billNote:'',merchant:merchant,proj:proj};
+  expenses.unshift(obj);lsSet('nextId',nextId);saveAll();
+  // 清空金額、備註、商家，保留日期/分類/錢包/幣別繼續記
+  document.getElementById('f-amt').value='';
+  document.getElementById('f-note').value='';
+  document.getElementById('f-merchant').value='';
+  document.getElementById('f-bill').value='';
+  document.getElementById('fxb').style.display='none';
+  document.getElementById('billb').style.display='none';
+  fxLocked=false;
+  showToast('✅ 已儲存，繼續記下一筆！');
+});
 
 document.getElementById('submit-btn').addEventListener('click',function(){
   var amt=parseFloat(document.getElementById('f-amt').value)||0,date=document.getElementById('f-date').value,note=document.getElementById('f-note').value,code=document.getElementById('f-cur').value;
