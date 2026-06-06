@@ -561,10 +561,63 @@ input::placeholder{color:var(--t3);font-weight:400}
       </div>
       <div id="gas-status" style="font-size:11px;color:var(--t3);font-weight:600"></div>
       <div class="divider"></div>
-      <div style="font-size:10.5px;color:var(--t3);font-weight:600;line-height:1.8">
-        💡 如何取得網址：Apps Script → 部署 → 管理部署作業 → 複製網路應用程式網址<br>
-        💡 換新裝置：填入同一個網址 → 按「⬇️ 從雲端下載」
+      <div style="font-size:11px;color:var(--t3);font-weight:600;line-height:1.9">
+        📌 <b>第一次設定步驟：</b><br>
+        1. 開啟 <a href="https://script.google.com" target="_blank" style="color:var(--ac)">script.google.com</a> → 新增專案<br>
+        2. 貼入下方 Script 程式碼 → 儲存<br>
+        3. 點「部署」→「新增部署作業」→ 類型選「網路應用程式」<br>
+        4. 執行者：<b>我</b>、存取權：<b>任何人</b> → 部署 → 複製網址貼到上方<br>
+        5. ⚠️ 每次修改 Script 都需要重新部署才會生效
       </div>
+      <button class="btn bg2 bsm" style="margin-top:6px;width:100%" onclick="(function(){var el=document.getElementById('gas-script-tmpl');el.style.display=el.style.display?'':'block'})()">📄 顯示／隱藏 Apps Script 程式碼</button>
+      <pre id="gas-script-tmpl" style="display:none;margin-top:8px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;font-size:10px;overflow-x:auto;white-space:pre;color:var(--tx);line-height:1.6;user-select:all">// MoneyBook Apps Script — 貼到 Google Apps Script 後部署
+var SHEET_NAME = 'MoneyBook';
+
+function getSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  return ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+}
+
+function doGet(e) {
+  var p = e.parameter;
+  if (p.action === 'load') {
+    var data = loadData();
+    var cb = p.callback || 'cb';
+    return ContentService.createTextOutput(cb + '(' + JSON.stringify(data) + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  if (p.action === 'save' && p.data) {
+    saveData(JSON.parse(decodeURIComponent(p.data)));
+    return ContentService.createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput('ok');
+}
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    saveData(data);
+    return ContentService.createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false,msg:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function saveData(data) {
+  var sheet = getSheet();
+  sheet.clearContents();
+  sheet.getRange(1,1).setValue(JSON.stringify(data));
+}
+
+function loadData() {
+  var sheet = getSheet();
+  var val = sheet.getRange(1,1).getValue();
+  if (!val) return {};
+  try { return JSON.parse(val); } catch(e) { return {}; }
+}</pre>
     </div>
   </div>
   <div id="set-wallets" style="display:none"><div id="wl-list"></div><button class="btn bp bsm" id="btn-add-wl">＋ 新增錢包</button></div>
@@ -1046,30 +1099,51 @@ function pushToGAS(){
   GAS_URL=lsGet('gas_url','')||GAS_URL;
   if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
   saveAll();
-  // 壓縮欄位名稱縮短 URL，對應 GAS doGet save 解壓
+
+  // 完整 payload：記帳記錄 + 所有設定
   var payload=JSON.stringify({
-    r:expenses.map(function(ex){return[
-      ex.date||'',ex.cat||'',ex.sub||'',ex.merchant||'',
-      ex.wallet||'',ex.currency||'TWD',ex.amount||0,
-      ex.twd||0,ex.type||'expense',ex.note||''
-    ];})
+    expenses:expenses,
+    cats:cats,
+    wallets:wallets,
+    currencies:currencies,
+    projects:projects,
+    fixed:fixedItems,
+    quickItems:quickItems,
+    nextId:nextId,
+    theme:activeThemeIdx
   });
+
   showToast('☁️ 上傳中…');gasStatus('上傳中…');
-  gasRequest({action:'save',data:payload},function(err,res){
-    if(err){
-      showToast('❌ 上傳失敗，資料已存本機');
-      gasStatus('❌ 請確認 Apps Script 已部署（'+err.message+'）',false);
-      return;
+  var uploaded=false;
+
+  // 優先用 fetch POST（無 URL 長度限制）
+  fetch(GAS_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain'},
+    body:payload
+  }).then(function(){
+    if(uploaded)return;uploaded=true;
+    showToast('✅ 已同步至 Google Sheets！');
+    document.getElementById('sync-badge').textContent='剛剛';
+    lsSet('gas_last_push',Date.now());
+    gasStatus('✅ 上傳成功 '+new Date().toLocaleTimeString(),true);
+  }).catch(function(){
+    // fallback：GET beacon
+    if(uploaded)return;uploaded=true;
+    var qs='action=save&t='+Date.now()+'&data='+encodeURIComponent(payload);
+    if(qs.length>7000){
+      showToast('❌ 資料量過大，請確認 GAS 已支援 POST');
+      gasStatus('❌ 資料過大，需要 GAS doPost 支援',false);return;
     }
-    if(res&&res.ok){
+    var img=new Image();
+    img.onload=img.onerror=function(){
       showToast('✅ 已同步至 Google Sheets！');
       document.getElementById('sync-badge').textContent='剛剛';
       lsSet('gas_last_push',Date.now());
       gasStatus('✅ 上傳成功 '+new Date().toLocaleTimeString(),true);
-    } else {
-      showToast('⚠️ 上傳失敗：'+(res&&res.msg||'未知'));
-      gasStatus('❌ '+(res&&res.msg||'失敗'),false);
-    }
+    };
+    img.src=GAS_URL+'?action=save&'+qs;
   });
 }
 
