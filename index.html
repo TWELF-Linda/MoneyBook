@@ -1377,8 +1377,17 @@ function renderHome(){
   document.getElementById('st-fixed').textContent=stats.fixed.toLocaleString();
   document.getElementById('hm-bar').style.width=pct+'%';
   renderAIHome();
+  // 顯示本月所有記錄（而非固定6筆）
+  var thisYM=now.getFullYear()+'-'+(String(now.getMonth()+1).padStart(2,'0'));
   var el=document.getElementById('hm-list'),h='';
-  var show=expenses.slice(0,6);
+  var show=expenses.filter(function(e){return e.date&&e.date.slice(0,7)===thisYM;});
+  if(show.length===0){
+    // 本月無記錄時，顯示最近6筆（可能是上個月的）
+    show=expenses.slice(0,6);
+    if(show.length>0){
+      h+='<div style="font-size:11px;color:var(--t3);font-weight:700;padding:4px 2px 6px">📋 本月尚無記錄，顯示最近記錄</div>';
+    }
+  }
   for(var i=0;i<show.length;i++)h+=expHTML(show[i]);
   el.innerHTML=h||'<div class="empty">尚無記帳記錄</div>';
   bindExpClicks(el);
