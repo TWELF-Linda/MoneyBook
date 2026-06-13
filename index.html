@@ -1977,14 +1977,16 @@ document.getElementById('auto-fx-confirm').addEventListener('click',function(){
 });
 
 document.getElementById('btn-fixed').addEventListener('click',function(){
+  var active=fixedItems.filter(function(f){return f.active;});
   if(!active.length){showToast('⚠️ 無啟用的固定收支');return;}
   var h='';
   for(var i=0;i<active.length;i++){
     var f=active[i];
+    var walletInfo=f.wallet?' · '+f.wallet:'';
     h+='<div class="ei" style="cursor:pointer" data-fi="'+i+'">'
       +'<div class="eico" style="background:var(--s2)">⚡</div>'
       +'<div class="ein"><div class="enm">'+f.name+'</div>'
-      +'<div class="emt">'+f.cat+(f.sub?' · '+f.sub:'')+' · '+f.currency+' '+f.amount+'</div></div>'
+      +'<div class="emt">'+f.cat+(f.sub?' · '+f.sub:'')+walletInfo+' · '+f.currency+' '+f.amount+(f.dayOfMonth?' · 每月'+f.dayOfMonth+'號':'')+'</div></div>'
       +'<span class="bdg '+(f.type==='income'?'bgr':'brd')+'">'+(f.type==='income'?'收入':'支出')+'</span>'
       +'</div>';
   }
@@ -3297,6 +3299,7 @@ document.getElementById('btn-add-merchant').addEventListener('click',function(){
 document.getElementById('ov-merchant').addEventListener('click',function(e){
   if(e.target.id==='ov-merchant')closeOv('ov-merchant');
 });
+}
 var origOvMerchant=document.getElementById('ov-merchant').querySelector('.modal');
 if(origOvMerchant){origOvMerchant.addEventListener('show',renderMerchantList);}
 // render merchant list when modal opens
