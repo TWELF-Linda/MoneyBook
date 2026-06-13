@@ -1647,6 +1647,11 @@ function renderHome(){
   var sortVal=sortSel?sortSel.value:'date-desc';
   var el=document.getElementById('hm-list'),h='';
   var show=expenses.filter(function(e){return e.date&&e.date.slice(0,7)===thisYM;});
+  // 若月份過濾結果為空，但 expenses 確實有資料，可能是日期格式問題——嘗試寬鬆比對
+  if(show.length===0&&expenses.length>0){
+    var ymAlt=hmDispY+'/'+(String(hmDispM+1).padStart(2,'0'));// 斜線格式
+    show=expenses.filter(function(e){return e.date&&(e.date.slice(0,7)===thisYM||e.date.slice(0,7)===ymAlt);});
+  }
   if(show.length===0){
     if(isCurrentMonth){
       show=expenses.slice(0,20);
@@ -1702,15 +1707,19 @@ function renderAIHome(){
   });
 }
 function expHTML(e){
-  var isIn=e.type==='income',col=catColor(e.cat),ico=e.cat.split(' ')[0]||'📦';
+  if(!e)return '';
+  var cat=e.cat||'📦 其他';
+  var isIn=e.type==='income',col=catColor(cat),ico=cat.split(' ')[0]||'📦';
+  var amt=Number(e.amount)||0,twd=Number(e.twd)||0;
   var billTag=e.billEdited?'<span class="bedit">帳單更新</span>':'';
-  var amtStr=e.currency==='TWD'?'NT$'+e.amount.toLocaleString():e.currency+' '+e.amount.toLocaleString();
-  var twdLine=e.currency!=='TWD'?'<div class="etw">≈ NT$'+e.twd.toLocaleString()+'</div>':'';
-  var dispName=e.note||e.sub||e.cat||'記帳';
-  // 收入用綠色背景，支出用分類顏色背景（更飽和）
+  var amtStr=e.currency==='TWD'?'NT$'+amt.toLocaleString():e.currency+' '+amt.toLocaleString();
+  var twdLine=e.currency&&e.currency!=='TWD'?'<div class="etw">≈ NT$'+twd.toLocaleString()+'</div>':'';
+  var dispName=e.note||e.sub||cat||'記帳';
+  var wallet=e.wallet||'';
+  var eid=e.id!=null?e.id:'';
   var icoBg=isIn?'rgba(45,122,72,0.15)':col+'33';
   var icoStyle='background:'+icoBg+';border:1.5px solid '+(isIn?'rgba(45,122,72,0.25)':col+'55')+';box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)';
-  return '<div class="ei" data-eid="'+e.id+'"><div class="eico" style="'+icoStyle+'">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+e.date+' · '+e.wallet+(e.sub?' · '+e.sub:'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':'-')+amtStr+'</div>'+twdLine+'</div></div>';
+  return '<div class="ei" data-eid="'+eid+'"><div class="eico" style="'+icoStyle+'">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+(e.date||'')+(wallet?' · '+wallet:'')+(e.sub?' · '+e.sub:'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':'-')+amtStr+'</div>'+twdLine+'</div></div>';
 }
 function bindExpClicks(container){container.querySelectorAll('.ei').forEach(function(el){el.addEventListener('click',function(){viewExp(parseInt(el.dataset.eid));});});}
 
