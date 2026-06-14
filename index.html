@@ -2115,7 +2115,6 @@ document.getElementById('submit-btn').addEventListener('click',function(){
 document.getElementById('cancel-btn').addEventListener('click',function(){resetAdd();gotoPage('home');});
 
 function resetAdd(){document.getElementById('f-eid').value='';document.getElementById('add-ttl').textContent='✏️ 新增記帳';document.getElementById('submit-btn').textContent='✅ 確認新增';document.getElementById('f-amt').value='';document.getElementById('f-note').value='';document.getElementById('f-bill').value='';
-// 保留上一筆的日期（方便連續補記同一天）—— renderAddPage 只在空時才補今天
 document.getElementById('fxb').style.display='none';document.getElementById('billb').style.display='none';document.getElementById('magic-res').style.display='none';document.getElementById('magic-wrap').classList.remove('open');fxLocked=false;magicOpen=false;activeCat=cats[0]?cats[0].name:'';activeSub='';expType='expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});applyExpTypeUI();}
 function editExp(id){
   var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}
