@@ -885,6 +885,7 @@ var projects=lsGet('projects',DEFAULT_PROJECTS);
 var fixedItems=lsGet('fixed',DEFAULT_FIXED);
 var expenses=lsGet('expenses',DEFAULT_EXPENSES);
 quickItems=lsGet('quickItems')||quickItems||[];
+var merchants=lsGet('merchants',DEFAULT_MERCHANTS);
 var activeThemeIdx=lsGet('theme',0);
 var nextId=lsGet('nextId',100);
 
@@ -1304,40 +1305,84 @@ function applyCalc(){
   calcFX();
 }
 (function(){
-  var display,expr='0',op='',prev=0,fresh=false;
-  function upd(){display.textContent=expr;}
-  document.addEventListener('DOMContentLoaded',function(){});
-  window.addEventListener('load',function(){
-    display=document.getElementById('calc-display');
+  var display, exprStr='', currentNum='0', pendingOp='', pendingVal=0, justEvaled=false;
+
+  function getDisplay(){ return display || (display=document.getElementById('calc-display')); }
+
+  function upd(val){
+    var d=getDisplay();
+    if(d) d.textContent = val;
+  }
+
+  function applyOp(a, op, b){
+    if(op==='+') return a+b;
+    if(op==='-') return a-b;
+    if(op==='×') return a*b;
+    if(op==='÷') return b!==0 ? a/b : NaN;
+    return b;
+  }
+
+  function fmtNum(n){
+    if(isNaN(n)) return 'Error';
+    // 去掉多餘小數點
+    var s = String(parseFloat(n.toFixed(10)));
+    return s;
+  }
+
+  window.addEventListener('load', function(){
     document.querySelectorAll('.calc-btn').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        var c=btn.dataset.c;
-        if(!display)display=document.getElementById('calc-display');
-        if(c==='C'){expr='0';op='';prev=0;fresh=false;}
-        else if(c==='±'){expr=String(-parseFloat(expr)||0);}
-        else if(c==='%'){expr=String(parseFloat(expr)/100);}
-        else if(c==='='){ 
-          if(op){
-            var cur=parseFloat(expr);
-            if(op==='+')expr=String(prev+cur);
-            else if(op==='-')expr=String(prev-cur);
-            else if(op==='×')expr=String(prev*cur);
-            else if(op==='÷')expr=cur?String(prev/cur):'Error';
-            op='';fresh=true;
+      btn.addEventListener('click', function(){
+        var c = btn.dataset.c;
+        var d = getDisplay();
+
+        if(c === 'C'){
+          currentNum='0'; pendingOp=''; pendingVal=0; justEvaled=false;
+          upd('0');
+        }
+        else if(c === '±'){
+          currentNum = fmtNum(-parseFloat(currentNum)||0);
+          upd(currentNum);
+        }
+        else if(c === '%'){
+          currentNum = fmtNum(parseFloat(currentNum)/100);
+          upd(currentNum);
+        }
+        else if(c === '='){
+          if(pendingOp){
+            var result = applyOp(pendingVal, pendingOp, parseFloat(currentNum)||0);
+            currentNum = fmtNum(result);
+            pendingOp = ''; pendingVal = 0; justEvaled = true;
+            upd(currentNum);
           }
         }
-        else if(['+','-','×','÷'].indexOf(c)>=0){
-          prev=parseFloat(expr)||0;op=c;fresh=true;
+        else if(['+','-','×','÷'].indexOf(c) >= 0){
+          var cur = parseFloat(currentNum)||0;
+          if(pendingOp && !justEvaled){
+            // 連續運算：先算前一步
+            var result = applyOp(pendingVal, pendingOp, cur);
+            pendingVal = result;
+            currentNum = fmtNum(result);
+            upd(currentNum + ' ' + c);
+          } else {
+            pendingVal = cur;
+            upd(currentNum + ' ' + c);
+          }
+          pendingOp = c; justEvaled = false; currentNum = '0';
         }
-        else if(c==='.'){
-          if(fresh){expr='0.';fresh=false;}
-          else if(expr.indexOf('.')<0)expr+='.';
+        else if(c === '.'){
+          if(justEvaled){ currentNum='0'; justEvaled=false; }
+          if(currentNum.indexOf('.')<0) currentNum += '.';
+          upd(currentNum);
         }
         else{
-          if(fresh||expr==='0'){expr=c;fresh=false;}
-          else expr+=c;
+          // 數字
+          if(justEvaled || currentNum==='0'){ currentNum=c; justEvaled=false; }
+          else currentNum += c;
+          // 最多12位
+          if(currentNum.replace('.','').replace('-','').length > 12)
+            currentNum = currentNum.slice(0,-1);
+          upd(currentNum);
         }
-        display.textContent=expr;
       });
     });
   });
@@ -1411,7 +1456,6 @@ document.getElementById('btn-sync').addEventListener('click',function(){
 
 // ── DEFAULT MERCHANTS ────────────────────────────────────────
 var DEFAULT_MERCHANTS=['星巴克','麥當勞','全家','7-ELEVEN','松本清','唐吉軻德','Airbnb','Uber Eats','Apple Store','痒痒鍋'];
-// merchants 已在上方宣告，此處不重複宣告
 
 // ── MERCHANT AUTOCOMPLETE ────────────────────────────────────
 function filterMerchants(){
@@ -3268,7 +3312,6 @@ function renderLock(){
 
 // ── DEFAULT MERCHANTS ────────────────────────────────────────
 var DEFAULT_MERCHANTS=['星巴克','麥當勞','全家','7-ELEVEN','松本清','唐吉軻德','Airbnb','Uber Eats','Apple Store','痒痒鍋'];
-// merchants 已在上方宣告，此處不重複宣告
 
 // ── MERCHANT AUTOCOMPLETE ────────────────────────────────────
 document.addEventListener('click',function(e){
