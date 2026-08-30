@@ -703,7 +703,7 @@ function loadData() {
 </div><!-- wrap -->
 
 <!-- MODALS -->
-<div class="ov" id="ov-exp"><div class="modal"><div class="mh"></div><div class="mt" id="ov-exp-t">明細</div><div id="ov-exp-b"></div><div class="mbtns" style="flex-wrap:nowrap"><button class="btn bp bfw" id="ov-edit">✏️ 編輯</button><button class="btn bd2 bsm" style="flex-shrink:0" id="ov-del">🗑</button><button class="btn bg2 bsm" style="flex-shrink:0" id="ov-cls">✕</button></div></div></div>
+<div class="ov" id="ov-exp"><div class="modal"><div class="mh"></div><div class="mt" id="ov-exp-t">明細</div><div id="ov-exp-b"></div><div class="mbtns" style="flex-wrap:nowrap"><button class="btn bp bfw" id="ov-edit">✏️ 編輯</button><button class="btn bg2 bsm" style="flex-shrink:0" id="ov-copy-exp">📋 複製</button><button class="btn bd2 bsm" style="flex-shrink:0" id="ov-del">🗑</button><button class="btn bg2 bsm" style="flex-shrink:0" id="ov-cls">✕</button></div></div></div>
 <div class="ov" id="ov-proj"><div class="modal"><div class="mh"></div><div class="mt" id="proj-mt">新增旅遊專案</div><div class="fg"><label class="fl">旗幟圖示</label><input type="text" id="pj-ico" placeholder="🇯🇵" style="width:62px"/></div><div class="fg"><label class="fl">專案名稱</label><input type="text" id="pj-name" placeholder="例：日本東京行"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">起始日</label><input type="date" id="pj-st"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">結束日</label><input type="date" id="pj-en"/></div></div><div class="fg"><label class="fl">預設幣別</label><select id="pj-cur"></select></div><div class="fg"><label class="fl">預算 (TWD)</label><input type="number" id="pj-bud" placeholder="25000"/></div><div class="mbtns"><button class="btn bp bfw" id="pj-save">✅ 儲存專案</button><button class="btn bg2" id="pj-cancel">取消</button></div><input type="hidden" id="pj-idx" value=""></div></div>
 <div class="ov" id="ov-wl"><div class="modal"><div class="mh"></div><div class="mt" id="wl-mt">新增錢包</div><div class="fg"><label class="fl">選擇圖示</label><div id="wl-icons" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px"></div></div><div class="fg"><label class="fl">錢包名稱</label><input type="text" id="wl-name" placeholder="例：旅遊現金"/></div><div class="mbtns"><button class="btn bp bfw" id="wl-save">✅ 儲存</button><button class="btn bg2" id="wl-cancel">取消</button></div><input type="hidden" id="wl-idx" value=""></div></div>
 <div class="ov" id="ov-cat"><div class="modal"><div class="mh"></div><div class="mt" id="cat-mt">新增分類</div><div class="fr" style="margin-bottom:10px"><div class="fg" style="width:65px;margin-bottom:0"><label class="fl">圖示</label><input type="text" id="ct-ico" placeholder="🍜"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">名稱</label><input type="text" id="ct-name" placeholder="餐飲"/></div><div class="fg" style="width:55px;margin-bottom:0"><label class="fl">顏色</label><input type="color" id="ct-color" value="#b85e28" style="height:36px;padding:2px"/></div></div><div class="fg"><label class="fl">🏷 適用類型</label><select id="ct-type" style="font-size:13px"><option value="">收入 &amp; 支出（通用）</option><option value="expense">💸 僅支出</option><option value="income">💚 僅收入</option></select></div><div class="fg"><label class="fl">💰 月預算上限 (TWD)<span style="color:var(--t3);font-size:11px"> 超過 80% 會警告，不設定留空</span></label><input type="text" inputmode="decimal" id="ct-budget" placeholder="例：5000"/></div><div class="fg"><label class="fl">子分類 <span style="font-weight:400;color:var(--t3)">(可新增/刪除/排序)</span></label><div id="sub-editor"></div><button class="btn bg2 bsm" style="margin-top:6px" id="btn-add-sub">＋ 新增子類別</button></div><div class="mbtns"><button class="btn bp bfw" id="cat-save">✅ 儲存分類</button><button class="btn bg2" id="cat-cancel">取消</button></div><input type="hidden" id="ct-idx" value=""></div></div>
@@ -1456,7 +1456,28 @@ document.getElementById('btn-sync').addEventListener('click',function(){
 
 
 // ── DEFAULT MERCHANTS ────────────────────────────────────────
-var DEFAULT_MERCHANTS=['星巴克','麥當勞','全家','7-ELEVEN','松本清','唐吉軻德','Airbnb','Uber Eats','Apple Store','痒痒鍋'];
+var DEFAULT_MERCHANTS=[
+  // 超商 & 量販
+  '7-ELEVEN','全家','萊爾富','OK便利商店','好市多','大潤發','家樂福','愛買','IKEA',
+  // 餐飲
+  '星巴克','路易莎','麥當勞','摩斯漢堡','肯德基','必勝客','達美樂','漢堡王','八方雲集','鬍鬚張','爭鮮','壽司郎','鼎泰豐','吉野家','Subway',
+  // 外送
+  'Uber Eats','foodpanda',
+  // 購物
+  'Zara','H&M','Uniqlo','蝦皮購物','momo購物','PChome','博客來','誠品',
+  // 藥妝 & 美容
+  '松本清','唐吉軻德','屈臣氏','康是美','寶雅',
+  // 交通
+  'Uber','台灣高鐵','台鐵','統聯客運','國光客運',
+  // 旅遊住宿
+  'Airbnb','Agoda','Booking.com',
+  // 娛樂
+  'Apple Store','Google Play','Netflix','Spotify','Steam',
+  // 醫療
+  '長庚醫院','台大醫院','馬偕醫院','國泰醫院','新光醫院',
+  // 金融
+  '全聯','大樹藥局','信義房屋','永慶房屋'
+];
 
 // ── MERCHANT AUTOCOMPLETE ────────────────────────────────────
 function filterMerchants(){
@@ -1774,6 +1795,39 @@ function viewExp(id){
   var isIn=e.type==='income',amtStr=e.currency==='TWD'?'NT$'+e.amount.toLocaleString():e.currency+' '+e.amount.toLocaleString();
   document.getElementById('ov-exp-b').innerHTML='<div class="sg" style="margin-bottom:10px"><div class="sc"><div class="sl">日期</div><div style="font-size:12px;font-weight:700">'+e.date+'</div></div><div class="sc"><div class="sl">錢包</div><div style="font-size:12px;font-weight:700">'+e.wallet+'</div></div><div class="sc"><div class="sl">分類</div><div style="font-size:12px;font-weight:700">'+e.cat+'</div></div></div><div class="sc" style="margin-bottom:10px"><div class="sl">金額</div><div style="font-size:20px;font-weight:900;color:'+(isIn?'var(--gr)':'var(--rd)')+';">'+(isIn?'+':'-')+amtStr+'</div>'+(e.currency!=='TWD'?'<div style="font-size:11px;color:var(--t3);font-weight:600">≈ NT$'+e.twd.toLocaleString()+'</div>':'')+(e.billEdited?'<div class="bedit" style="display:inline-flex;margin-top:5px">📄 '+(e.billNote||'帳單已更新')+'</div>':'')+'</div>'+(e.note?'<div class="sc"><div class="sl">備註</div><div style="font-size:13px;font-weight:600">'+e.note+'</div></div>':'');
   document.getElementById('ov-edit').onclick=function(){closeOv('ov-exp');editExp(id);};
+  document.getElementById('ov-copy-exp').onclick=function(){
+    closeOv('ov-exp');
+    gotoPage('add');
+    setTimeout(function(){
+      // 帶入所有欄位，但清空金額讓用戶確認
+      expType=e.type||'expense';
+      document.querySelectorAll('#type-tabs .tab').forEach(function(x){x.classList.toggle('on',x.dataset.type===expType);});
+      applyExpTypeUI();
+      document.getElementById('f-amt').value=e.amount;
+      document.getElementById('f-note').value=e.note||'';
+      document.getElementById('f-merchant').value=e.merchant||'';
+      document.getElementById('f-cur').value=e.currency||'TWD';
+      document.getElementById('f-date').value=todayStr();
+      // 分類
+      var catFull=e.cat||'';
+      for(var ci=0;ci<cats.length;ci++){
+        if(cats[ci].name===catFull||(cats[ci].icon+' '+cats[ci].name)===catFull){
+          activeCat=cats[ci].name;break;
+        }
+      }
+      activeSub=e.sub||'';
+      renderCatSelects();
+      // 錢包
+      var walSel=document.getElementById('f-wallet');
+      if(walSel&&e.wallet){
+        for(var wi=0;wi<walSel.options.length;wi++){
+          if(walSel.options[wi].value===e.wallet){walSel.selectedIndex=wi;break;}
+        }
+      }
+      calcFX();
+      showToast('📋 已複製，請確認後記帳');
+    },50);
+  };
   document.getElementById('ov-del').onclick=function(){showConfirm('🗑️','確定刪除？','「'+(e.note||e.sub||e.cat||'此記錄')+'」刪除後無法復原。',function(){expenses=expenses.filter(function(x){return x.id!==id;});saveAll();closeOv('ov-exp');renderHome();showToast('🗑️ 已刪除');debouncedPush();});};
   document.getElementById('ov-cls').onclick=function(){closeOv('ov-exp');};
   openOv('ov-exp');
@@ -3311,7 +3365,28 @@ function renderLock(){
 
 
 // ── DEFAULT MERCHANTS ────────────────────────────────────────
-var DEFAULT_MERCHANTS=['星巴克','麥當勞','全家','7-ELEVEN','松本清','唐吉軻德','Airbnb','Uber Eats','Apple Store','痒痒鍋'];
+var DEFAULT_MERCHANTS=[
+  // 超商 & 量販
+  '7-ELEVEN','全家','萊爾富','OK便利商店','好市多','大潤發','家樂福','愛買','IKEA',
+  // 餐飲
+  '星巴克','路易莎','麥當勞','摩斯漢堡','肯德基','必勝客','達美樂','漢堡王','八方雲集','鬍鬚張','爭鮮','壽司郎','鼎泰豐','吉野家','Subway',
+  // 外送
+  'Uber Eats','foodpanda',
+  // 購物
+  'Zara','H&M','Uniqlo','蝦皮購物','momo購物','PChome','博客來','誠品',
+  // 藥妝 & 美容
+  '松本清','唐吉軻德','屈臣氏','康是美','寶雅',
+  // 交通
+  'Uber','台灣高鐵','台鐵','統聯客運','國光客運',
+  // 旅遊住宿
+  'Airbnb','Agoda','Booking.com',
+  // 娛樂
+  'Apple Store','Google Play','Netflix','Spotify','Steam',
+  // 醫療
+  '長庚醫院','台大醫院','馬偕醫院','國泰醫院','新光醫院',
+  // 金融
+  '全聯','大樹藥局','信義房屋','永慶房屋'
+];
 
 // ── MERCHANT AUTOCOMPLETE ────────────────────────────────────
 document.addEventListener('click',function(e){
