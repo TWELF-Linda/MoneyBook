@@ -1252,6 +1252,7 @@ function pushToGAS(){
     projects:projects,
     fixed:fixedItems,
     quickItems:quickItems,
+    merchants:merchants,
     nextId:nextId,
     theme:activeThemeIdx
   });
@@ -3418,14 +3419,83 @@ renderAddPage();
 initRptPickers();
 // 開啟頁面時自動檢查月底固定收支
 setTimeout(function(){checkAutoApplyFixed();},1200);
+// ── 啟動：若本機無資料且有 GAS，先從雲端載入再渲染 ──────────
 (function(){
   var url=lsGet('gas_url','')||'';
-  if(url&&url.indexOf('script.google.com')>=0){
-    GAS_URL=url;
+  GAS_URL=url||GAS_URL;
+  var hasLocalData=expenses.length>0||wallets.length>0;
+
+  if(url&&url.indexOf('script.google.com')>=0&&!hasLocalData){
+    // 本機無資料 → 先顯示載入畫面，從雲端拉資料後再渲染
+    document.getElementById('hm-list').innerHTML='<div class="empty" style="padding:32px 16px;text-align:center"><div style="font-size:32px;margin-bottom:8px">☁️</div><div style="font-weight:700;font-size:14px">從雲端載入資料中…</div></div>';
+    gasRequest({action:'load'},function(err,d){
+      if(!err&&d&&d.expenses){
+        if(d.currencies)currencies=d.currencies;
+        if(d.wallets)wallets=d.wallets;
+        if(d.cats)cats=d.cats;
+        if(d.projects)projects=d.projects;
+        if(d.fixed)fixedItems=d.fixed;
+        if(d.merchants)merchants=d.merchants;
+        if(d.quickItems)quickItems=d.quickItems;
+        if(d.expenses){
+          var maxId=nextId||1;
+          expenses=d.expenses.map(function(ex,i){
+            var id=ex.id||(maxId+i);
+            return {id:id,name:ex.note||ex.sub||ex.cat||'記帳',
+              date:ex.date||'',cat:ex.cat||'',sub:ex.sub||'',
+              merchant:ex.merchant||'',wallet:ex.wallet||'',
+              currency:ex.currency||'TWD',amount:Number(ex.amount)||0,
+              twd:Number(ex.twd)||0,type:ex.type||'expense',
+              note:ex.note||'',proj:ex.proj||'',
+              billEdited:ex.billEdited||false,billNote:ex.billNote||'',
+              createdAt:ex.createdAt||Date.now()};
+          });
+          nextId=d.nextId||maxId+d.expenses.length;
+        }
+        if(d.theme!==undefined)activeThemeIdx=d.theme;
+        saveAll();applyTheme(activeThemeIdx);
+        showToast('✅ 資料已從雲端還原！');
+      } else {
+        showToast('☁️ 雲端無資料，請開始記帳');
+      }
+      // 無論成功失敗都渲染
+      renderHome();renderSettings();renderFixed();renderWallets();
+      renderCatSettings();renderCurSettings();
+    });
+  } else if(url&&url.indexOf('script.google.com')>=0){
+    // 本機有資料 → 背景靜默同步（不打擾用戶）
     setTimeout(function(){
-      showToast('☁️ 自動同步中…');
-      pullFromGAS();
-    },1200);
+      gasRequest({action:'load'},function(err,d){
+        if(err||!d||!d.expenses)return;
+        // 只在雲端筆數比本機多時才更新（避免覆蓋本機新增的資料）
+        if(d.expenses.length>expenses.length){
+          if(d.currencies)currencies=d.currencies;
+          if(d.wallets)wallets=d.wallets;
+          if(d.cats)cats=d.cats;
+          if(d.projects)projects=d.projects;
+          if(d.fixed)fixedItems=d.fixed;
+          if(d.merchants)merchants=d.merchants;
+          if(d.quickItems)quickItems=d.quickItems;
+          var maxId=nextId||1;
+          expenses=d.expenses.map(function(ex,i){
+            var id=ex.id||(maxId+i);
+            return {id:id,name:ex.note||ex.sub||ex.cat||'記帳',
+              date:ex.date||'',cat:ex.cat||'',sub:ex.sub||'',
+              merchant:ex.merchant||'',wallet:ex.wallet||'',
+              currency:ex.currency||'TWD',amount:Number(ex.amount)||0,
+              twd:Number(ex.twd)||0,type:ex.type||'expense',
+              note:ex.note||'',proj:ex.proj||'',
+              billEdited:ex.billEdited||false,billNote:ex.billNote||'',
+              createdAt:ex.createdAt||Date.now()};
+          });
+          nextId=d.nextId||maxId+d.expenses.length;
+          if(d.theme!==undefined)activeThemeIdx=d.theme;
+          saveAll();applyTheme(activeThemeIdx);
+          renderHome();renderSettings();
+          showToast('🔄 已從雲端同步最新資料');
+        }
+      });
+    },2000);
   }
 })();
 renderReports();
