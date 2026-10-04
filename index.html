@@ -978,7 +978,7 @@ function gotoPage(id){
   else if(id==='settings')renderSettings();
   else if(id==='search')renderSearch();
 }
-document.querySelectorAll('.bn').forEach(function(btn){btn.addEventListener('click',function(){gotoPage(btn.dataset.page);});});
+document.querySelectorAll('.bn').forEach(function(btn){btn.addEventListener('click',function(){addReturn='home';gotoPage(btn.dataset.page);});});
 document.getElementById('btn-cal').addEventListener('click',function(){gotoPage('reports');setTimeout(function(){switchRCTab('calendar');},50);});
 
 document.getElementById('link-all').addEventListener('click',function(){gotoPage('search');});
@@ -1945,6 +1945,27 @@ function calcFX(){
 }
 document.getElementById('f-amt').addEventListener('input',calcFX);
 document.getElementById('f-cur').addEventListener('change',calcFX);
+var addReturn='home',projAutoCur=false;
+function applyProjCurrency(){
+  var v=document.getElementById('f-proj').value,cs=document.getElementById('f-cur'),p=null;
+  for(var i=0;i<projects.length;i++){if(v===projects[i].flag+' '+projects[i].name){p=projects[i];break;}}
+  if(p&&p.currency&&cs.querySelector('option[value="'+p.currency+'"]')){cs.value=p.currency;projAutoCur=true;fxLocked=false;}
+  else if(!v&&projAutoCur){cs.value='TWD';projAutoCur=false;fxLocked=false;}
+  calcFX();
+}
+document.getElementById('f-proj').addEventListener('change',applyProjCurrency);
+function finishAdd(){
+  var back=addReturn||'home';addReturn='home';
+  try{resetAdd();}catch(err){console.error(err);}
+  gotoPage(back);
+}
+function openProjAdd(i){
+  var p=projects[i];if(!p)return;
+  resetAdd();addReturn='projects';gotoPage('add');
+  document.getElementById('f-proj').value=p.flag+' '+p.name;
+  applyProjCurrency();
+  document.getElementById('add-ttl').textContent='✏️ 新增記帳 · '+p.flag+' '+p.name;
+}
 document.getElementById('fx-lock').addEventListener('click',function(){fxLocked=!fxLocked;this.textContent=fxLocked?'🔒 已鎖定':'🔓 鎖定';showToast(fxLocked?'🔒 匯率已鎖定':'🔓 匯率解鎖');});
 document.getElementById('btn-apply-bill').addEventListener('click',function(){
   var v=document.getElementById('f-bill').value;
@@ -2169,6 +2190,7 @@ document.getElementById('btn-again').addEventListener('click',function(){
 });
 
 document.getElementById('submit-btn').addEventListener('click',function(){
+  var eid=document.getElementById('f-eid').value,proj=document.getElementById('f-proj').value||'';
   var amt=parseFloat(document.getElementById('f-amt').value)||0,date=document.getElementById('f-date').value,note=document.getElementById('f-note').value,code=document.getElementById('f-cur').value;
   if(!amt){showToast('⚠️ 請輸入金額');return;}if(!date){showToast('⚠️ 請選擇日期');return;}
   var rate=1;for(var i=0;i<currencies.length;i++){if(currencies[i].code===code){rate=currencies[i].rate;break;}}
@@ -2188,7 +2210,7 @@ document.getElementById('submit-btn').addEventListener('click',function(){
     var obj={id:eid?parseInt(eid):nextId++,name:note||('轉帳 '+walletVal+'→'+toWalletVal),cat:catStr,sub:'',wallet:walletVal,toWallet:toWalletVal,date:date,amount:amt,currency:code,twd:twd,note:note,type:'transfer',billEdited:false,billNote:'',merchant:'',proj:proj,createdAt:Date.now()};
     if(eid){for(var i=0;i<expenses.length;i++){if(expenses[i].id===parseInt(eid)){expenses[i]=obj;break;}}showToast('💾 已儲存修改');}
     else{expenses.unshift(obj);showToast('✅ 轉帳記錄完成！');}
-    lsSet('nextId',nextId);saveAll();resetAdd();gotoPage('home');
+    lsSet('nextId',nextId);saveAll();finishAdd();
     debouncedPush();
     return;
   }
@@ -2206,19 +2228,21 @@ document.getElementById('submit-btn').addEventListener('click',function(){
   else{expenses.unshift(obj);showToast('✅ 記帳成功！');}
   // Auto-add merchant to list if new
   if(merchant&&merchants.indexOf(merchant)<0){merchants.push(merchant);lsSet('merchants',merchants);if(document.getElementById('merchant-set-list'))renderMerchantSettings();}
-  lsSet('nextId',nextId);saveAll();resetAdd();gotoPage('home');
+  lsSet('nextId',nextId);saveAll();finishAdd();
   // Auto-sync to cloud after saving
   debouncedPush();
 });
-document.getElementById('cancel-btn').addEventListener('click',function(){resetAdd();gotoPage('home');});
+document.getElementById('cancel-btn').addEventListener('click',function(){finishAdd();});
 
 function resetAdd(){document.getElementById('f-eid').value='';document.getElementById('add-ttl').textContent='✏️ 新增記帳';document.getElementById('submit-btn').textContent='✅ 確認新增';document.getElementById('f-amt').value='';document.getElementById('f-note').value='';document.getElementById('f-bill').value='';
+document.getElementById('f-merchant').value='';document.getElementById('f-date').value=todayStr();document.getElementById('f-proj').value='';document.getElementById('f-cur').value='TWD';projAutoCur=false;
 // 保留上一筆的日期（方便連續補記同一天）—— renderAddPage 只在空時才補今天
 document.getElementById('fxb').style.display='none';document.getElementById('billb').style.display='none';document.getElementById('magic-res').style.display='none';document.getElementById('magic-wrap').classList.remove('open');fxLocked=false;magicOpen=false;activeCat=cats[0]?cats[0].name:'';activeSub='';expType='expense';document.querySelectorAll('#type-tabs .tab').forEach(function(x,i){x.classList.toggle('on',i===0);});applyExpTypeUI();}
 function editExp(id){
   var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}
   if(!e)return;
 
+  var _pg=document.querySelector('.page.on');addReturn=(_pg&&_pg.id!=='pg-add')?_pg.id.slice(3):'home';
   // 先填好所有狀態，再切換頁面（避免 renderAddPage 覆蓋值）
   document.getElementById('add-ttl').textContent='✏️ 編輯記帳';
   document.getElementById('submit-btn').textContent='💾 儲存修改';
@@ -2247,6 +2271,9 @@ function editExp(id){
   var _eCopy=e;
   setTimeout(function(){
     document.getElementById('f-cur').value=_eCopy.currency||'TWD';
+    var psel=document.getElementById('f-proj'),pv=_eCopy.proj||'';
+    if(pv){var has=false;for(var pi=0;pi<psel.options.length;pi++){if(psel.options[pi].value===pv)has=true;}if(!has){var op=document.createElement('option');op.value=op.textContent=pv;psel.appendChild(op);}}
+    psel.value=pv;
 
     // 設定錢包：完整比對 value
     var walSel=document.getElementById('f-wallet');
@@ -2296,7 +2323,7 @@ function renderProjects(){
     var slbl={done:'已結束',upcoming:'即將到來',active:'進行中'}[status];
     var scls={done:'',upcoming:'bbl',active:'bgr'}[status];
     var pc=pct>90?'ov':pct>70?'wn':'';
-    h+='<div class="di" draggable="true" style="flex-direction:column;align-items:stretch;border-radius:var(--r)" data-pi="'+i+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div style="display:flex;align-items:center;gap:6px"><span class="dh">⠿</span><span style="font-size:19px">'+p.flag+'</span><span style="font-size:13px;font-weight:800">'+p.name+'</span></div><div style="display:flex;gap:4px;align-items:center"><span class="bdg '+scls+'" '+(scls?'':'style="background:var(--s2);color:var(--t3)"')+'>'+slbl+'</span><button class="bico" data-pedit="'+i+'">✏️</button><button class="bico" style="color:var(--rd)" data-pdel="'+i+'">🗑</button></div></div><div style="font-size:11px;color:var(--t3);margin-bottom:7px;font-weight:600">'+p.start+' – '+p.end+' · '+p.currency+'</div><div class="sg" style="margin-bottom:6px"><div class="sc"><div class="sl">預算</div><div class="sv" style="font-size:13px">NT$'+p.budget.toLocaleString()+'</div></div><div class="sc"><div class="sl">已花</div><div class="sv ex" style="font-size:13px">NT$'+p.spent.toLocaleString()+'</div></div><div class="sc"><div class="sl">剩餘</div><div class="sv in" style="font-size:13px">NT$'+(p.budget-p.spent).toLocaleString()+'</div></div></div><div class="pb"><div class="pf '+pc+'" style="width:'+pct+'%"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:3px;font-weight:600"><span>已用 '+pct+'%</span><span>'+p.start+' → '+p.end+'</span></div><div id="proj-inline-det-'+i+'" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--bd)"></div><button class="btn bg2 bsm bfw" style="margin-top:8px" data-proj-det="'+i+'">📋 查看支出明細</button></div>';
+    h+='<div class="di" draggable="true" style="flex-direction:column;align-items:stretch;border-radius:var(--r)" data-pi="'+i+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div style="display:flex;align-items:center;gap:6px"><span class="dh">⠿</span><span style="font-size:19px">'+p.flag+'</span><span style="font-size:13px;font-weight:800">'+p.name+'</span></div><div style="display:flex;gap:4px;align-items:center"><span class="bdg '+scls+'" '+(scls?'':'style="background:var(--s2);color:var(--t3)"')+'>'+slbl+'</span><button class="bico" data-pedit="'+i+'">✏️</button><button class="bico" style="color:var(--rd)" data-pdel="'+i+'">🗑</button></div></div><div style="font-size:11px;color:var(--t3);margin-bottom:7px;font-weight:600">'+p.start+' – '+p.end+' · '+p.currency+'</div><div class="sg" style="margin-bottom:6px"><div class="sc"><div class="sl">預算</div><div class="sv" style="font-size:13px">NT$'+p.budget.toLocaleString()+'</div></div><div class="sc"><div class="sl">已花</div><div class="sv ex" style="font-size:13px">NT$'+p.spent.toLocaleString()+'</div></div><div class="sc"><div class="sl">剩餘</div><div class="sv in" style="font-size:13px">NT$'+(p.budget-p.spent).toLocaleString()+'</div></div></div><div class="pb"><div class="pf '+pc+'" style="width:'+pct+'%"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:3px;font-weight:600"><span>已用 '+pct+'%</span><span>'+p.start+' → '+p.end+'</span></div><div id="proj-inline-det-'+i+'" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--bd)"></div><div style="display:flex;gap:8px;margin-top:8px">'+(status!=='done'?'<button class="btn bp bsm" style="flex:1" data-padd="'+i+'">＋ 記一筆</button>':'')+'<button class="btn bg2 bsm" style="flex:1" data-proj-det="'+i+'">📋 查看支出明細</button></div></div>';
   }
   el.innerHTML=h;
   // bind 查看明細 buttons
@@ -2326,6 +2353,7 @@ function renderProjects(){
     });
   });
   el.querySelectorAll('.di').forEach(function(item){item.addEventListener('dragstart',function(){dragIdx=parseInt(item.dataset.pi);});item.addEventListener('dragover',function(e){e.preventDefault();});item.addEventListener('drop',function(){var ti=parseInt(item.dataset.pi);if(dragIdx>=0&&dragIdx!==ti){var p2=projects.splice(dragIdx,1)[0];projects.splice(ti,0,p2);dragIdx=-1;saveAll();renderProjects();}});});
+  el.querySelectorAll('[data-padd]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();openProjAdd(parseInt(btn.dataset.padd));});});
   el.querySelectorAll('[data-pedit]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();openProjModal(parseInt(btn.dataset.pedit));});});
   el.querySelectorAll('[data-pbill]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();openProjBillModal(parseInt(btn.dataset.pbill));});});
   el.querySelectorAll('[data-pdel]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var i2=parseInt(btn.dataset.pdel);showConfirm('🗑️','確定刪除專案？','「'+projects[i2].name+'」將移除，無法復原。',function(){projects.splice(i2,1);saveAll();renderProjects();showToast('🗑️ 已刪除');});});});
