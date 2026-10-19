@@ -701,7 +701,7 @@ input::placeholder{color:var(--t3);font-weight:400}
 <div class="ov" id="ov-proj"><div class="modal"><div class="mh"></div><div class="mt" id="proj-mt">新增旅遊專案</div><div class="fg"><label class="fl">旗幟圖示</label><input type="text" id="pj-ico" placeholder="🇯🇵" style="width:62px"/></div><div class="fg"><label class="fl">專案名稱</label><input type="text" id="pj-name" placeholder="例：日本東京行"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">起始日</label><input type="date" id="pj-st"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">結束日</label><input type="date" id="pj-en"/></div></div><div class="fg"><label class="fl">預設幣別</label><select id="pj-cur"></select></div><div class="fg"><label class="fl">預算 (TWD)</label><input type="number" id="pj-bud" placeholder="25000"/></div><div class="mbtns"><button class="btn bp bfw" id="pj-save">✅ 儲存專案</button><button class="btn bg2" id="pj-cancel">取消</button></div><input type="hidden" id="pj-idx" value=""></div></div>
 <div class="ov" id="ov-wl"><div class="modal"><div class="mh"></div><div class="mt" id="wl-mt">新增錢包</div><div class="fg"><label class="fl">選擇圖示</label><div id="wl-icons" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px"></div></div><div class="fg"><label class="fl">錢包名稱</label><input type="text" id="wl-name" placeholder="例：旅遊現金"/></div><div class="mbtns"><button class="btn bp bfw" id="wl-save">✅ 儲存</button><button class="btn bg2" id="wl-cancel">取消</button></div><input type="hidden" id="wl-idx" value=""></div></div>
 <div class="ov" id="ov-cat"><div class="modal"><div class="mh"></div><div class="mt" id="cat-mt">新增分類</div><div class="fr" style="margin-bottom:10px"><div class="fg" style="width:65px;margin-bottom:0"><label class="fl">圖示</label><input type="text" id="ct-ico" placeholder="🍜"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">名稱</label><input type="text" id="ct-name" placeholder="餐飲"/></div><div class="fg" style="width:55px;margin-bottom:0"><label class="fl">顏色</label><input type="color" id="ct-color" value="#b85e28" style="height:36px;padding:2px"/></div></div><div class="fg"><label class="fl">🏷 適用類型</label><select id="ct-type" style="font-size:13px"><option value="">收入 &amp; 支出（通用）</option><option value="expense">💸 僅支出</option><option value="income">💚 僅收入</option></select></div><div class="fg"><label class="fl">💰 月預算上限 (TWD)<span style="color:var(--t3);font-size:11px"> 超過 80% 會警告，不設定留空</span></label><input type="text" inputmode="decimal" id="ct-budget" placeholder="例：5000"/></div><div class="fg"><label class="fl">子分類 <span style="font-weight:400;color:var(--t3)">(可新增/刪除/排序)</span></label><div id="sub-editor"></div><button class="btn bg2 bsm" style="margin-top:6px" id="btn-add-sub">＋ 新增子類別</button></div><div class="mbtns"><button class="btn bp bfw" id="cat-save">✅ 儲存分類</button><button class="btn bg2" id="cat-cancel">取消</button></div><input type="hidden" id="ct-idx" value=""></div></div>
-<div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390" inputmode="decimal"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">🔁 週期</label><select id="fx-period" onchange="updateFxPeriodUI()"><option value="monthly">每月</option><option value="yearly">每年</option><option value="weekly">每週</option><option value="daily">每天</option></select></div><div class="fg" id="fx-month-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📆 月份</label><select id="fx-month"></select></div><div class="fg" id="fx-day-wrap" style="flex:1;margin-bottom:0"><label class="fl">📅 幾號</label><select id="fx-day"><option value="0">月底</option></select></div><div class="fg" id="fx-wd-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📅 星期</label><select id="fx-wd"><option value="0">週日</option><option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option><option value="6">週六</option></select></div></div><div class="fg"><label class="fl">▶️ 開始日期 <span style="color:var(--t3);font-size:11px;font-weight:600">（這天起才會提醒入帳，不會補更早的）</span></label><input type="date" id="fx-since"/></div><div class="fg"><label class="fl">💳 錢包</label><select id="fx-wallet"></select></div><div class="fg"><label class="fl">分類</label><select id="fx-cat" onchange="updateFxSub()"></select></div><div class="fg"><label class="fl">子分類</label><select id="fx-sub"></select></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
+<div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390" inputmode="decimal"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">🔁 週期</label><select id="fx-period" onchange="updateFxPeriodUI()"><option value="monthly">每月</option><option value="yearly">每年</option><option value="weekly">每週</option><option value="daily">每天</option></select></div><div class="fg" id="fx-month-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📆 月份</label><select id="fx-month"></select></div><div class="fg" id="fx-day-wrap" style="flex:1;margin-bottom:0"><label class="fl">📅 幾號</label><select id="fx-day"><option value="0">月底</option></select></div><div class="fg" id="fx-wd-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📅 星期</label><select id="fx-wd"><option value="0">週日</option><option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option><option value="6">週六</option></select></div></div><div class="fg"><label class="fl">▶️ 開始日期 <span style="color:var(--t3);font-size:11px;font-weight:600">（這天起才會提醒入帳，不會補更早的）</span></label><input type="date" id="fx-since"/></div><div class="fg"><label class="fl">💳 錢包</label><select id="fx-wallet"></select></div><div class="fg"><label class="fl">分類</label><select id="fx-cat" onchange="updateFxSub()"></select></div><div class="fg"><label class="fl">子分類</label><select id="fx-sub"></select></div><div class="fg"><label class="fl">🏪 商家 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填）</span></label><input type="text" id="fx-merchant" list="fx-merchant-list" placeholder="例：Netflix、房東" autocomplete="off"/><datalist id="fx-merchant-list"></datalist></div><div class="fg"><label class="fl">📝 備註 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填，入帳時會帶入）</span></label><input type="text" id="fx-note" placeholder="例：家庭方案、含管理費" autocomplete="off"/></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
 <div class="ov" id="ov-cur"><div class="modal"><div class="mh"></div><div class="mt" id="cur-mt">新增幣別</div><div class="fg"><label class="fl">代碼</label><input type="text" id="cu-code" placeholder="AUD" style="width:80px"/></div><div class="fg"><label class="fl">名稱</label><input type="text" id="cu-name" placeholder="澳幣"/></div><div class="fg"><label class="fl">對 TWD 匯率</label><input type="number" id="cu-rate" placeholder="21.5" step="0.0001"/></div><div class="mbtns"><button class="btn bp bfw" id="cur-save">✅ 儲存</button><button class="btn bg2" id="cur-cancel">取消</button></div><input type="hidden" id="cu-idx" value=""></div></div>
 <div class="cov" id="cov"><div class="cbox"><div class="cico" id="c-ico">⚠️</div><div class="ctit" id="c-tit">確定嗎？</div><div class="cmsg" id="c-msg">此操作無法復原。</div><div style="display:flex;gap:8px"><button class="btn bd2 bfw" id="c-ok">確認</button><button class="btn bg2 bfw" id="c-cancel">取消</button></div></div></div>
 <div class="ov" id="ov-sync"><div class="modal"><div class="mh"></div><div class="mt">☁️ 同步狀態</div><div id="sync-sheet-body"></div><div class="mbtns"><button class="btn bp bfw" onclick="closeOv('ov-sync');syncNow()">🔄 立即同步</button><button class="btn bg2" onclick="closeOv('ov-sync')">關閉</button></div></div></div>
@@ -2538,7 +2538,7 @@ function fxIsDone(f,due){
     var e=expenses[i];
     if(!e||!e.date||e.date<r[0]||e.date>r[1])continue;
     if(isInc?(e.type!=='income'):!isExp(e))continue;
-    if((e.note||e.name)===f.name)return true;
+    if(e.name===f.name||(e.note||e.name)===f.name)return true;
   }
   return false;
 }
@@ -2596,7 +2596,7 @@ function showAutoFx(manual){
     h+='<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--bd);cursor:pointer">';
     h+='<input type="checkbox" checked data-auto-fi="'+i+'" style="width:18px;height:18px;cursor:pointer"/>';
     h+='<div style="flex:1"><div style="font-size:13px;font-weight:700">'+esc(f.name)+'</div>';
-    h+='<div style="font-size:10.5px;color:var(--t3);font-weight:600">'+esc(due)+' · '+esc(f.cat)+(f.sub?' · '+esc(f.sub):'')+' · '+esc(f.currency)+' '+esc(f.amount)+'</div></div>';
+    h+='<div style="font-size:10.5px;color:var(--t3);font-weight:600">'+esc(due)+' · '+esc(f.cat)+(f.sub?' · '+esc(f.sub):'')+' · '+esc(f.currency)+' '+esc(f.amount)+'</div>'+((f.merchant||f.note)?'<div style="font-size:11px;color:var(--t3);font-weight:600">'+(f.merchant?'🏪 '+esc(f.merchant):'')+(f.merchant&&f.note?' · ':'')+(f.note?'📝 '+esc(f.note):'')+'</div>':'')+'</div>';
     h+='<span class="bdg '+labelColor+'">'+typeLabel+'</span>';
     h+='</label>';
   }
@@ -2628,7 +2628,7 @@ document.getElementById('auto-fx-confirm').addEventListener('click',function(){
       id:nextId++,name:f.name,cat:catStr,sub:f.sub||'',
       wallet:f.wallet||(wallets.length?wallets[0].icon+' '+wallets[0].name:'💳 信用卡'),
       date:due,amount:f.amount,currency:f.currency,twd:fxToTWD(f.amount,f.currency),
-      note:f.name,type:f.type,billEdited:false,billNote:'',merchant:'',proj:'',
+      note:f.note||f.name,type:f.type,billEdited:false,billNote:'',merchant:f.merchant||'',proj:'',
       createdAt:Date.now()
     };
     expenses.unshift(obj);count++;
@@ -3818,7 +3818,8 @@ function renderFixed(){
     h+='<span class="dh">⠿</span>';
     h+='<div style="flex:1">';
     h+='<div style="font-size:13px;font-weight:700">'+esc(f.name)+'</div>';
-    h+='<div style="font-size:10.5px;color:var(--t3);font-weight:600">'+esc(f.cat)+' · '+pLabel+dayStr+' '+esc(f.currency)+' '+esc(f.amount)+'</div>';
+    h+='<div style="font-size:11px;color:var(--t3);font-weight:600">'+esc(f.cat)+' · '+pLabel+dayStr+' '+esc(f.currency)+' '+esc(f.amount)+'</div>';
+    if(f.merchant||f.note)h+='<div style="font-size:11px;color:var(--t3);font-weight:600">'+(f.merchant?'🏪 '+esc(f.merchant):'')+(f.merchant&&f.note?' · ':'')+(f.note?'📝 '+esc(f.note):'')+'</div>';
     h+='</div>';
     h+='<span class="bdg '+(f.type==='income'?'bgr':'brd')+'">'+(f.type==='income'?'收入':'支出')+'</span>';
     h+='<label class="sw"><input type="checkbox" '+(f.active?'checked':'')+' data-fxact="'+i+'"><span class="sws"></span></label>';
@@ -3884,14 +3885,17 @@ function openFxModal(idx){
     document.getElementById('fx-wd').value=String(fxWeekday(f));
     document.getElementById('fx-since').value=f.since||todayStr();
     if(f.wallet)document.getElementById('fx-wallet').value=f.wallet;
+    document.getElementById('fx-merchant').value=f.merchant||'';
+    document.getElementById('fx-note').value=f.note||'';
   }else{
-    ['fx-name','fx-amt'].forEach(function(id){document.getElementById(id).value='';});
+    ['fx-name','fx-amt','fx-merchant','fx-note'].forEach(function(id){document.getElementById(id).value='';});
     document.getElementById('fx-period').value='monthly';
     dayEl.value=now.getDate();
     moEl.value=String(now.getMonth()+1);
     document.getElementById('fx-wd').value=String(now.getDay());
     document.getElementById('fx-since').value=todayStr();
   }
+  var ml=document.getElementById('fx-merchant-list');if(ml)ml.innerHTML=merchants.map(function(m){return '<option value="'+esc(m)+'"></option>';}).join('');
   updateFxPeriodUI();
   openOv('ov-fx');
 }
@@ -3919,8 +3923,11 @@ document.getElementById('fx-save').addEventListener('click',function(){
     weekday:per==='weekly'?(isNaN(w)?1:w):undefined,
     since:document.getElementById('fx-since').value||todayStr(),
     wallet:document.getElementById('fx-wallet').value,
+    merchant:document.getElementById('fx-merchant').value.trim(),
+    note:document.getElementById('fx-note').value.trim(),
     active:old?old.active!==false:true   // 編輯時保留原本的啟用／停用狀態
   };
+  if(obj.merchant&&merchants.indexOf(obj.merchant)<0){merchants.push(obj.merchant);lsSet('merchants',merchants);}
   if(idx!=='')fixedItems[parseInt(idx)]=obj;else fixedItems.push(obj);
   saveAll();closeOv('ov-fx');renderFixed();
   try{renderFxHint();}catch(_e){}
