@@ -185,6 +185,11 @@ input::placeholder{color:var(--t3);font-weight:400}
 /* TOAST */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--tx);color:var(--sf);padding:8px 18px;border-radius:20px;font-size:12px;font-weight:800;z-index:600;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;max-width:88vw;text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.sync-pill{display:inline-flex;align-items:center;gap:6px;align-self:center;background:var(--s2);border:1.5px solid var(--bd);border-radius:20px;padding:4px 10px;min-height:30px;font-size:11px;font-weight:800;color:var(--t2);cursor:pointer;font-family:var(--f)}
+.sdot{width:9px;height:9px;border-radius:50%;background:var(--t3);flex:none}
+.sdot.ok{background:var(--gr)}.sdot.pend{background:var(--am)}.sdot.err{background:var(--rd)}
+.sdot.busy{background:var(--ac);animation:sdp 1s ease-in-out infinite}
+@keyframes sdp{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* DRAG */
 .di{display:flex;align-items:center;gap:8px;background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--rs);padding:8px 11px;margin-bottom:6px;transition:border .15s}
@@ -280,13 +285,14 @@ input::placeholder{color:var(--t3);font-weight:400}
   </div>
   <div class="tbr">
     <button class="ib" id="btn-sync" title="雲端同步">☁️</button>
-    <span id="sync-badge" style="font-size:10px;color:var(--t3);align-self:center;font-weight:700"></span>
+    <button type="button" id="sync-badge" class="sync-pill" onclick="openSyncSheet()" aria-label="同步狀態" style="display:none"><span class="sdot" id="sync-dot"></span><span id="sync-txt"></span></button>
   </div>
 </div>
 
 <!-- PAGES -->
 <!-- HOME -->
 <div class="page on" id="pg-home">
+  <div id="home-banners"></div>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-top:2px;margin-bottom:10px">
     <div style="display:flex;align-items:center;gap:6px">
       <button onclick="hmNavMonth(-1)" style="background:none;border:none;font-size:18px;color:var(--t3);cursor:pointer;padding:0 2px;line-height:1">‹</button>
@@ -393,7 +399,7 @@ input::placeholder{color:var(--t3);font-weight:400}
   <div class="tabbar" id="type-tabs">
     <div class="tab on" data-type="expense">💸 支出</div>
     <div class="tab" data-type="income">💚 收入</div>
-    <div class="tab" data-type="transfer">↔️ 轉帳</div>
+    <div class="tab" data-type="transfer">↔️ 轉帳支出</div>
   </div>
 
   <!-- 分類/子分類 -->
@@ -437,7 +443,7 @@ input::placeholder{color:var(--t3);font-weight:400}
     <div class="fg" style="flex:1;margin-bottom:0"><label class="fl" id="f-wallet-lbl">👛 錢包</label><select id="f-wallet"></select></div>
     <div class="fg" style="flex:1;margin-bottom:0"><label class="fl">✈️ 專案</label><select id="f-proj"></select></div>
   </div>
-  <div class="fg" id="to-wallet-row" style="display:none"><label class="fl">👛 轉入錢包</label><select id="f-to-wallet"></select></div>
+  <div class="fg" id="to-wallet-row" style="display:none"><label class="fl">👛 轉入錢包 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填，只是轉帳支出可不指定）</span></label><select id="f-to-wallet"></select></div>
   <div class="fg"><label class="fl">📝 備註</label><textarea id="f-note" placeholder="記點什麼吧…"></textarea></div>
   <input type="hidden" id="f-eid" value="">
   <div id="add-bottom-bar">
@@ -642,6 +648,17 @@ input::placeholder{color:var(--t3);font-weight:400}
 請改用專案中的 Code.gs：整份貼入 Apps Script 覆蓋原內容，並重新部署（新版本）。
 首次使用請記得把檔案開頭的 SHEET_ID 換成你自己的試算表 ID。</pre>
     </div>
+    <p class="stitle">💾 本機備份</p>
+    <div class="card" style="padding:13px 14px">
+      <div style="font-size:11px;color:var(--t3);font-weight:600;line-height:1.8;margin-bottom:8px">把全部資料存成檔案，放在手機或電腦裡。iOS Safari 約 7 天沒開啟，網站資料可能被清除；建議定期匯出，並把 App 加到主畫面。</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn bp bsm" onclick="exportBackupJSON()">📤 匯出備份（JSON）</button>
+        <button class="btn bg2 bsm" onclick="exportCSV()">📊 匯出記帳 CSV</button>
+        <button class="btn bg2 bsm" onclick="document.getElementById('backup-file').click()">📥 匯入備份</button>
+      </div>
+      <input type="file" id="backup-file" accept=".json,application/json" style="display:none" onchange="importBackupFile(this)"/>
+      <div id="backup-status" style="font-size:11px;color:var(--t3);font-weight:600"></div>
+    </div>
   </div>
   <div id="set-wallets" style="display:none"><div id="wl-list"></div><button class="btn bp bsm" id="btn-add-wl">＋ 新增錢包</button></div>
   <div id="set-cats" style="display:none">
@@ -679,6 +696,7 @@ input::placeholder{color:var(--t3);font-weight:400}
 <div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390" inputmode="decimal"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">🔁 扣款週期</label><select id="fx-period"><option value="monthly">每月</option><option value="yearly">每年</option><option value="weekly">每週</option><option value="daily">每天</option></select></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">📅 每月幾號執行</label><select id="fx-day"><option value="0">不指定</option></select></div></div><div class="fg"><label class="fl">💳 錢包</label><select id="fx-wallet"></select></div><div class="fg"><label class="fl">分類</label><select id="fx-cat" onchange="updateFxSub()"></select></div><div class="fg"><label class="fl">子分類</label><select id="fx-sub"></select></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
 <div class="ov" id="ov-cur"><div class="modal"><div class="mh"></div><div class="mt" id="cur-mt">新增幣別</div><div class="fg"><label class="fl">代碼</label><input type="text" id="cu-code" placeholder="AUD" style="width:80px"/></div><div class="fg"><label class="fl">名稱</label><input type="text" id="cu-name" placeholder="澳幣"/></div><div class="fg"><label class="fl">對 TWD 匯率</label><input type="number" id="cu-rate" placeholder="21.5" step="0.0001"/></div><div class="mbtns"><button class="btn bp bfw" id="cur-save">✅ 儲存</button><button class="btn bg2" id="cur-cancel">取消</button></div><input type="hidden" id="cu-idx" value=""></div></div>
 <div class="cov" id="cov"><div class="cbox"><div class="cico" id="c-ico">⚠️</div><div class="ctit" id="c-tit">確定嗎？</div><div class="cmsg" id="c-msg">此操作無法復原。</div><div style="display:flex;gap:8px"><button class="btn bd2 bfw" id="c-ok">確認</button><button class="btn bg2 bfw" id="c-cancel">取消</button></div></div></div>
+<div class="ov" id="ov-sync"><div class="modal"><div class="mh"></div><div class="mt">☁️ 同步狀態</div><div id="sync-sheet-body"></div><div class="mbtns"><button class="btn bp bfw" onclick="closeOv('ov-sync');syncNow()">🔄 立即同步</button><button class="btn bg2" onclick="closeOv('ov-sync')">關閉</button></div></div></div>
 <div class="toast" id="toast-el"></div>
 
 <!-- FIXED PICK MODAL -->
@@ -836,6 +854,8 @@ function lsSet(k,v){
 }
 // 記帳的 proj 欄位格式為「圖示 名稱」。用完整比對，避免「日本」誤吃「日本東京行」；
 // 只改了圖示時（名稱相同）仍視為同一專案。
+// 支出判斷：一般支出與轉帳（轉帳＝從某帳戶轉出一筆費用）都算支出
+function isExp(e){return !!e&&(e.type==='expense'||e.type==='transfer');}
 function projMatch(projStr,p){
   if(!projStr||!p)return false;
   if(projStr===p.flag+' '+p.name)return true;
@@ -846,13 +866,41 @@ function syncProjSpent(){
   if(typeof projects==='undefined'||typeof expenses==='undefined')return;
   for(var i=0;i<projects.length;i++){
     var p=projects[i],sum=0;
-    for(var k=0;k<expenses.length;k++){var e=expenses[k];if(e.type==='expense'&&projMatch(e.proj,p))sum+=(Number(e.twd)||0);}
+    for(var k=0;k<expenses.length;k++){var e=expenses[k];if(isExp(e)&&projMatch(e.proj,p))sum+=(Number(e.twd)||0);}
     p.spent=sum;
   }
+}
+// ── 逐筆合併用：每筆記帳的 updatedAt 與刪除紀錄（tombstones）─────────
+// 所有新增／修改／刪除最後都會經過 saveAll，所以在這裡統一比對，不必改動每個編輯入口
+var expMeta=lsGet('exp_meta',{}),tombstones=lsGet('tombstones',{}),_applyingCloud=false;
+var TOMB_KEEP_MS=120*86400000;
+function expFp(e){return JSON.stringify([e.date,e.cat,e.sub,e.merchant,e.wallet,e.currency,e.amount,e.twd,e.type,e.note,e.proj,!!e.billEdited,e.billNote,e.toWallet||'',e.name]);}
+function touchExpenses(){
+  if(typeof expenses==='undefined'||!Array.isArray(expenses))return;
+  var now=Date.now(),first=!lsGet('exp_meta_init',false),seen={},meta={};
+  for(var i=0;i<expenses.length;i++){
+    var e=expenses[i],idn=Number(e.id);
+    if(!(idn>0))continue;
+    var id=String(idn),fp=expFp(e),m=expMeta[id],u;
+    seen[id]=true;
+    if(_applyingCloud){u=Number(e.updatedAt)||0;}                       // 來自雲端／合併結果：沿用既有時間
+    else if(m&&m.h===fp){u=m.u;}                                       // 沒變：維持原時間
+    else if(!m&&first){u=Number(e.updatedAt)||0;}                      // 升級前的舊資料：先當作基準（0）
+    else{u=now;}                                                       // 新增或有修改
+    e.updatedAt=u;meta[id]={h:fp,u:u};
+    if(tombstones[id]&&u>Number(tombstones[id]))delete tombstones[id];  // 刪除後又重新出現
+  }
+  if(!_applyingCloud){
+    for(var k in expMeta){if(!seen[k]&&!tombstones[k])tombstones[k]=now;}   // 本機刪掉的
+  }
+  for(var t in tombstones){if(now-Number(tombstones[t])>TOMB_KEEP_MS)delete tombstones[t];}
+  expMeta=meta;
+  lsSet('exp_meta',meta);lsSet('exp_meta_init',true);lsSet('tombstones',tombstones);
 }
 var _noDirty=false,_dirtySeq=0;
 function saveAll(){
   syncProjSpent();
+  touchExpenses();
   lsSet('currencies',currencies);lsSet('wallets',wallets);lsSet('cats',cats);lsSet('projects',projects);lsSet('fixed',fixedItems);lsSet('expenses',expenses);lsSet('theme',activeThemeIdx);lsSet('merchants',merchants);lsSet('quickItems',quickItems);
   // 修正：nextId 一併存入，避免重新整理後 ID 回到舊值而重複
   if(typeof nextId!=='undefined')lsSet('nextId',nextId);
@@ -995,7 +1043,7 @@ function calcMonthStats(dispY,dispM){
     if(!e.date||e.date.slice(0,7)!==ymStr)continue;
     if(!e.proj){
       if(e.type==='income')income+=(Number(e.twd)||0);
-      else if(e.type==='expense')expense+=(Number(e.twd)||0);
+      else if(isExp(e))expense+=(Number(e.twd)||0);
     }
   }
   var fixedExp=0;
@@ -1021,7 +1069,7 @@ function gotoPage(id){
   window.scrollTo(0,0);
   if(pg)pg.scrollTop=0;
   if(id==='home')renderHome();
-  else if(id==='add')renderAddPage();
+  else if(id==='add'){renderAddPage();focusAmtIfNew();}
   else if(id==='projects')renderProjects();
   else if(id==='reports'){initRptPickers();renderReports();renderCalendar();}
   else if(id==='settings')renderSettings();
@@ -1077,6 +1125,8 @@ function debouncedPush(){
 function gasStatus(msg,ok){
   var el=document.getElementById('gas-status');
   if(el){el.textContent=msg;el.style.color=ok===false?'var(--rd)':ok===true?'var(--gr)':'var(--t3)';}
+  if(ok===false)recordSyncIssue(msg);else if(ok===true)clearSyncIssue();
+  try{updateSyncBadge();}catch(_e){}
 }
 
 var GAS_TIMEOUT_SAVE=45000;
@@ -1306,18 +1356,111 @@ function saveQuickItem(){
 }
 
 // ── 同步狀態徽章 ────────────────────────────────────────────
+// ── 同步狀態：膠囊、明細視窗、首頁提醒 ──────────────────────────
+function relTime(ts){
+  ts=Number(ts)||0;if(!ts)return '';
+  var m=Math.floor((Date.now()-ts)/60000);
+  if(m<1)return '剛剛';if(m<60)return m+' 分鐘前';
+  var h=Math.floor(m/60);if(h<24)return h+' 小時前';
+  return Math.floor(h/24)+' 天前';
+}
+// 把技術性的錯誤訊息換成「發生什麼事＋下一步」
+function friendlySync(msg){
+  msg=String(msg||'');
+  if(/密鑰|NO_KEY|UNAUTHORIZED/.test(msg))return{key:'key',level:'err',action:'settings',title:'同步密鑰有問題',next:'請到設定頁重新貼上同步密鑰（在 Apps Script 執行 setupApiKey 取得）。你的資料仍安全存在這台裝置。'};
+  if(/離線/.test(msg))return{key:'offline',level:'warn',action:'retry',title:'目前離線',next:'資料已安全存在這台裝置，連上網路後會自動重傳。'};
+  if(/筆數|大幅|SHRINK/.test(msg))return{key:'shrink',level:'err',action:'settings',title:'本機筆數遠少於雲端',next:'為避免誤蓋掉雲端資料，已暫停自動上傳。請到設定頁確認後，再選擇上傳或下載。'};
+  if(/衝突/.test(msg))return{key:'conflict',level:'err',action:'retry',title:'兩台裝置的資料需要合併',next:'按「立即同步」會自動逐筆合併；若失敗，再到設定頁選擇上傳或下載。'};
+  return{key:'net',level:'err',action:'retry',title:'暫時連不上雲端',next:'資料仍安全存在這台裝置，連線後會自動重傳；也可以按「立即同步」再試一次。持續失敗請到設定頁檢查網址與部署。'};
+}
+function recordSyncIssue(msg){
+  var f=friendlySync(msg);
+  lsSet('sync_issue',{msg:String(msg||''),ts:Date.now(),key:f.key,level:f.level,action:f.action});
+}
+function clearSyncIssue(){if(lsGet('sync_issue',null))lsSet('sync_issue',null);}
+function syncStateInfo(){
+  var url=lsGet('gas_url','')||'';
+  if(!url)return null;
+  var dirty=!!lsGet('dirty',false),issue=lsGet('sync_issue',null),once=!!lsGet('syncedOnce',false),ls=Number(lsGet('last_sync',0))||0;
+  if(typeof _pushing!=='undefined'&&_pushing)return{cls:'busy',txt:'同步中…'};
+  if(issue&&issue.level!=='warn')return{cls:'err',txt:'需處理'};
+  if(issue&&issue.level==='warn')return{cls:'pend',txt:'離線中'+(dirty?' · 待上傳':'')};
+  if(dirty)return{cls:'pend',txt:'待上傳'};
+  if(once)return{cls:'ok',txt:ls?'已同步 · '+relTime(ls):'已同步'};
+  return{cls:'',txt:'尚未同步'};
+}
 function updateSyncBadge(){
   var el=document.getElementById('sync-badge');if(!el)return;
-  var dirty=!!lsGet('dirty',false);
-  el.textContent=dirty?'未同步':(lsGet('syncedOnce',false)?'已同步':'');
-  el.style.color=dirty?'var(--am)':'var(--t3)';
+  var st=syncStateInfo();
+  if(!st){el.style.display='none';return;}
+  el.style.display='';
+  document.getElementById('sync-dot').className='sdot '+st.cls;
+  document.getElementById('sync-txt').textContent=st.txt;
+  try{renderHomeBanners();}catch(_e){}
+}
+function openSyncSheet(){
+  var st=syncStateInfo()||{cls:'',txt:'尚未啟用雲端同步'};
+  var issue=lsGet('sync_issue',null),lm=lsGet('last_merge',null),ls=Number(lsGet('last_sync',0))||0,h='';
+  h+='<div style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:900;margin-bottom:8px"><span class="sdot '+st.cls+'" style="width:12px;height:12px"></span>'+esc(st.txt)+'</div>';
+  h+='<div class="sc" style="margin-bottom:8px"><div class="sl">上次成功同步</div><div style="font-size:12px;font-weight:700">'+(ls?esc(new Date(ls).toLocaleString())+'（'+relTime(ls)+'）':'尚無紀錄')+'</div></div>';
+  if(lsGet('dirty',false))h+='<div class="sc" style="margin-bottom:8px"><div class="sl">本機狀態</div><div style="font-size:12px;font-weight:700">有尚未上傳的修改（已安全存在這台裝置）</div></div>';
+  if(issue){
+    var f=friendlySync(issue.msg);
+    h+='<div class="sc" style="margin-bottom:8px;border-color:var(--'+(f.level==='warn'?'am':'rd')+')"><div class="sl">'+esc(f.title)+'</div><div style="font-size:12px;font-weight:700;line-height:1.7">'+esc(f.next)+'</div><div style="font-size:10px;color:var(--t3);margin-top:4px">詳細：'+esc(issue.msg)+'（'+relTime(issue.ts)+'）</div>'+(f.action==='settings'?'<button class="btn bp bsm" style="margin-top:8px" onclick="closeOv(\'ov-sync\');gotoPage(\'settings\')">前往設定</button>':'')+'</div>';
+  }
+  if(lm){
+    h+='<div class="sc"><div class="sl">上次逐筆合併（'+esc(relTime(lm.ts))+'）</div><div style="font-size:12px;font-weight:700;line-height:1.7">從雲端新增 '+lm.added+' 筆、採用雲端較新版本 '+lm.updated+' 筆、跟著刪除 '+lm.removed+' 筆，合併後共 '+lm.total+' 筆。'+(lm.settingsKeptLocal?'<br>設定（分類／錢包等）沿用本機版本。':'')+'</div></div>';
+  }
+  document.getElementById('sync-sheet-body').innerHTML=h;
+  openOv('ov-sync');
+}
+// 立即同步：有未上傳修改就上傳（遇衝突會自動合併）；沒有就向雲端取最新
+function syncNow(){
+  GAS_URL=lsGet('gas_url','')||GAS_URL;
+  if(!GAS_URL){showToast('⚠️ 請先在設定頁填入 Apps Script 網址');gotoPage('settings');return;}
+  if(lsGet('dirty',false))pushToGAS();else pullFromGAS();
+}
+// ── 首頁頂部提醒：同步問題、備份提醒 ─────────────────────────────
+function isIOSBrowserTab(){
+  var ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  var standalone=(window.navigator.standalone===true)||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
+  return ios&&!standalone;   // 加到主畫面開啟的 App 不受「7 天清除」影響，不提醒
+}
+function backupDays(){
+  var ref=Number(lsGet('last_export',0))||Number(lsGet('backup_since',0))||Date.now();
+  return Math.floor((Date.now()-ref)/86400000);
+}
+function bannerHTML(msg,btnLabel,btnJs,dismissJs){
+  return '<div class="card" style="padding:10px 12px;margin-bottom:8px;display:flex;gap:8px;align-items:center;border-color:var(--am)"><div style="flex:1;font-size:12px;font-weight:700;line-height:1.6">'+msg+'</div>'+
+    (btnLabel?'<button class="btn bp bsm" onclick="'+btnJs+'">'+btnLabel+'</button>':'')+
+    '<button aria-label="關閉提醒" onclick="'+dismissJs+'" style="background:none;border:none;font-size:16px;color:var(--t3);cursor:pointer;padding:6px 8px;min-width:36px;min-height:36px">✕</button></div>';
+}
+function renderHomeBanners(){
+  var el=document.getElementById('home-banners');if(!el)return;
+  var h='',issue=lsGet('sync_issue',null);
+  if(issue&&issue.level!=='warn'&&lsGet('banner_sync_dismiss',0)!==issue.ts&&lsGet('gas_url','')){
+    var f=friendlySync(issue.msg);
+    h+=bannerHTML('⚠️ <b>'+esc(f.title)+'</b><br><span style="font-weight:600;color:var(--t2)">'+esc(f.next)+'</span>',
+      f.action==='settings'?'前往設定':'立即同步',f.action==='settings'?"gotoPage('settings')":'syncNow()',
+      "lsSet('banner_sync_dismiss',"+issue.ts+");renderHomeBanners()");
+  }
+  if(isIOSBrowserTab()&&expenses.length>0&&backupDays()>=7&&(Date.now()-(Number(lsGet('backup_remind_dismiss',0))||0))>7*86400000){
+    h+=bannerHTML('💾 已經 <b>'+backupDays()+' 天</b>沒匯出備份。iOS 瀏覽器約 7 天沒開啟，網站資料可能被清除。建議匯出一份備份，或把 App 加到主畫面。',
+      '立即匯出','exportBackupJSON()',"lsSet('backup_remind_dismiss',Date.now());renderHomeBanners()");
+  }
+  el.innerHTML=h;
+}
+function focusAmtIfNew(){
+  var a=document.getElementById('f-amt'),eid=document.getElementById('f-eid');
+  if(!a||(eid&&eid.value))return;           // 編輯舊記錄時不自動彈出鍵盤
+  try{a.focus({preventScroll:true});}catch(_e){a.focus();}
 }
 
 var _pushing=false,_keyWarned=false;
 function buildSyncPayload(force){
   var p={v:2,key:lsGet('gas_key','')||'',baseRev:Number(lsGet('syncedRev',0))||0,
     expenses:expenses,cats:cats,wallets:wallets,currencies:currencies,projects:projects,
-    fixed:fixedItems,quickItems:quickItems,merchants:merchants,nextId:nextId,theme:activeThemeIdx};
+    fixed:fixedItems,quickItems:quickItems,merchants:merchants,nextId:nextId,theme:activeThemeIdx,tombstones:tombstones};
   if(force)p.force=true;
   return p;
 }
@@ -1330,7 +1473,7 @@ function pushToGAS(opts){
   if(navigator.onLine===false){if(!silent){showToast('📵 目前離線，資料已存本機，連線後再上傳');}gasStatus('📵 離線中，資料安全存於本機',false);return;}
   if(silent&&!lsGet('syncedOnce',false))return;   // 尚未與雲端對齊過：不自動上傳，避免預設資料蓋掉雲端
   if(_pushing)return;
-  _pushing=true;
+  _pushing=true;updateSyncBadge();
 
   // 先確保本機已寫入，但不改變 dirty 狀態
   _noDirty=true;try{saveAll();}finally{_noDirty=false;}
@@ -1343,14 +1486,14 @@ function pushToGAS(opts){
   gasRequest({action:'save',data:payload,baseRev:payload.baseRev,expectCount:expenses.length},function(err,res){
     _pushing=false;
     if(err){
-      if(!silent)showToast('❌ 上傳失敗：'+err.message);
+      if(!silent)showToast('❌ 暫時連不上雲端，資料仍安全存在這台裝置，連線後會自動重傳');
       gasStatus('❌ 上傳失敗（'+err.message+'）資料仍安全存於本機',false);
       return;
     }
     if(res&&res.ok){
       lsSet('syncedRev',Number(res.rev)||0);lsSet('syncedOnce',true);
       if(_dirtySeq===seq)lsSet('dirty',false);          // 上傳期間若又有修改，維持未同步
-      lsSet('gas_last_push',Date.now());
+      lsSet('gas_last_push',Date.now());lsSet('last_sync',Date.now());lsSet('settings_fp',settingsFp());
       updateSyncBadge();
       if(!silent)showToast('✅ 已同步至 Google Sheets（'+expenses.length+' 筆）');
       gasStatus('✅ 上傳成功 '+new Date().toLocaleTimeString(),true);
@@ -1365,8 +1508,21 @@ function pushToGAS(opts){
     }
     if(code==='CONFLICT'){
       gasStatus('⚠️ 同步衝突：雲端資料已被其他裝置更新',false);
-      if(silent){showToast('⚠️ 雲端有其他裝置的較新資料，請到設定頁選擇「上傳」或「下載」');return;}
-      showConfirm('⚠️','雲端資料已被其他裝置更新','雲端目前有 '+(res.count||0)+' 筆，本機有 '+expenses.length+' 筆。按「確定」＝用本機覆蓋雲端（伺服器會先自動備份）；按「取消」＝先不上傳，可到設定頁按「從雲端下載」取得雲端版本。',function(){pushToGAS({force:true});});
+      var legacyConflict=function(){
+        if(silent){showToast('⚠️ 雲端有其他裝置的較新資料，請到設定頁選擇「上傳」或「下載」');return;}
+        showConfirm('⚠️','雲端資料已被其他裝置更新','雲端目前有 '+(res.count||0)+' 筆，本機有 '+expenses.length+' 筆。按「確定」＝用本機覆蓋雲端（伺服器會先自動備份）；按「取消」＝先不上傳，可到設定頁按「從雲端下載」取得雲端版本。',function(){pushToGAS({force:true});});
+      };
+      var tries=Number(opts._mergeTry)||0;
+      if(tries>=2){legacyConflict();return;}
+      gasStatus('🔀 偵測到其他裝置的更新，正在逐筆合併…');
+      gasRequest({action:'load'},function(e2,d2){
+        if(e2||!d2||d2.ok===false||!d2.expenses){legacyConflict();return;}
+        var r;
+        try{r=mergeWithCloud(d2);}catch(me){legacyConflict();return;}
+        renderAllAfterSync();
+        showToast(mergeToast(r));
+        pushToGAS({silent:silent,_mergeTry:tries+1});
+      });
       return;
     }
     if(code==='SHRINK'){
@@ -1375,7 +1531,7 @@ function pushToGAS(opts){
       showConfirm('⚠️','雲端筆數將大幅減少','雲端目前有 '+(res.count||0)+' 筆，本機只有 '+(res.incoming||expenses.length)+' 筆。確定要用本機資料覆蓋嗎？（伺服器會先自動備份，可事後還原）',function(){pushToGAS({force:true});});
       return;
     }
-    if(!silent)showToast('❌ 上傳失敗：'+msg);
+    if(!silent)showToast('❌ 這次沒能上傳（'+msg+'）。資料仍安全存在這台裝置，稍後會自動重試');
     gasStatus('❌ 上傳失敗：'+msg,false);
   });
 }
@@ -1495,7 +1651,7 @@ function cleanCloudSettings(d){
 }
 
 function applyCloudData(d){
-  _noDirty=true;
+  _noDirty=true;_applyingCloud=true;
   try{
     cleanCloudSettings(d);
     if(d.currencies)currencies=d.currencies;
@@ -1520,17 +1676,193 @@ function applyCloudData(d){
         twd:Number(ex.twd)||0,type:ex.type||'expense',
         note:ex.note||'',proj:ex.proj||'',
         billEdited:!!ex.billEdited,billNote:ex.billNote||'',
-        createdAt:Number(ex.createdAt)||0};
+        createdAt:Number(ex.createdAt)||0,updatedAt:Number(ex.updatedAt)||0};
       if(ex.toWallet)o.toWallet=ex.toWallet;
       list.push(o);
     }
     // 舊資料沒有 ID：由後往前補號（陣列前面較新，拿較大的 ID）
     for(var k=missing.length-1;k>=0;k--){list[missing[k]].id=next++;}
     expenses=list;nextId=next;
+    // 下載＝以雲端為準：本機刪除紀錄改用雲端的
+    tombstones={};
+    if(d.tombstones&&typeof d.tombstones==='object'){for(var tk in d.tombstones){var tv=Number(d.tombstones[tk])||0;if(tv>0)tombstones[tk]=tv;}}
     saveAll();                       // 含 nextId；_noDirty 為 true，不會標記未同步
-  }finally{_noDirty=false;}
-  lsSet('dirty',false);lsSet('syncedRev',Number(d.rev)||0);lsSet('syncedOnce',true);
+  }finally{_noDirty=false;_applyingCloud=false;}
+  lsSet('dirty',false);lsSet('syncedRev',Number(d.rev)||0);lsSet('syncedOnce',true);lsSet('settings_fp',settingsFp());
+  lsSet('last_sync',Date.now());clearSyncIssue();
   applyTheme(activeThemeIdx);updateSyncBadge();
+}
+
+// ── 設定指紋：判斷「這台裝置自上次同步後，有沒有改過設定」────────
+function djb2(str){var h=5381;for(var i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return String(h);}
+function settingsFp(){
+  var ps=(projects||[]).map(function(p){var o=Object.assign({},p);delete o.spent;return o;});
+  return djb2(JSON.stringify([cats,wallets,currencies,ps,fixedItems,quickItems,activeThemeIdx]));
+}
+function normCloudExp(ex){
+  var o={id:Number(ex.id)||0,name:ex.name||ex.note||ex.sub||ex.cat||'記帳',
+    date:ex.date||'',cat:ex.cat||'',sub:ex.sub||'',merchant:ex.merchant||'',wallet:ex.wallet||'',
+    currency:ex.currency||'TWD',amount:Number(ex.amount)||0,twd:Number(ex.twd)||0,type:ex.type||'expense',
+    note:ex.note||'',proj:ex.proj||'',billEdited:!!ex.billEdited,billNote:ex.billNote||'',
+    createdAt:Number(ex.createdAt)||0,updatedAt:Number(ex.updatedAt)||0};
+  if(ex.toWallet)o.toWallet=ex.toWallet;
+  return o;
+}
+// 逐筆合併：兩邊各自的修改都保留。同一筆兩邊都改過 → 取 updatedAt 較新的；
+// 只有一邊有 → 保留，除非另一邊在那筆最後修改之後把它刪掉（tombstones）。
+// 設定（分類／錢包／幣別／專案／固定收支／快速記帳／主題）沒有逐筆時間：
+// 這台沒改過 → 採用雲端；這台改過 → 保留本機；商家清單取聯集。
+function mergeWithCloud(d){
+  cleanCloudSettings(d);
+  var cloudList=(d.expenses||[]).map(normCloudExp).filter(function(x){return x.id>0;});
+  var cT=(d.tombstones&&typeof d.tombstones==='object')?d.tombstones:{};
+  var tomb={},k;
+  for(k in tombstones){tomb[k]=Number(tombstones[k])||0;}
+  for(k in cT){var tv=Number(cT[k])||0;if(tv>(tomb[k]||0))tomb[k]=tv;}
+
+  var nid=Math.max(Number(nextId)||0,Number(d.nextId)||0,100);
+  expenses.forEach(function(e){var n=Number(e.id)||0;if(n>=nid)nid=n+1;});
+  cloudList.forEach(function(e){if(e.id>=nid)nid=e.id+1;});
+
+  var map={},order=[],st={added:0,updated:0,removed:0};
+  expenses.forEach(function(e){var id=Number(e.id)||0;if(id>0&&!map[id]){map[id]={l:e};order.push(id);}});
+  cloudList.forEach(function(c){
+    var id=c.id,ent=map[id];
+    if(!ent){map[id]={c:c};order.push(id);return;}
+    if(ent.l&&ent.l.createdAt>0&&c.createdAt>0&&ent.l.createdAt!==c.createdAt){
+      // 兩台裝置各自新增、剛好用到同一個編號：雲端那筆改編新號，兩筆都保留
+      c.id=nid++;map[c.id]={c:c,fresh:true};order.push(c.id);return;
+    }
+    ent.c=c;
+  });
+
+  var out=[];
+  order.forEach(function(id){
+    var ent=map[id],w=null,tid=String(ent.c&&ent.fresh?ent.c.id:id);
+    if(ent.l&&ent.c){
+      w=(ent.c.updatedAt>ent.l.updatedAt)?ent.c:ent.l;
+      if(w===ent.c&&expFp(ent.c)!==expFp(ent.l))st.updated++;
+    }else if(ent.l){w=ent.l;}
+    else{w=ent.c;}
+    var tm=Number(tomb[tid])||0;
+    if(tm&&tm>=(Number(w.updatedAt)||0)){   // 刪除發生在最後一次修改之後 → 維持刪除
+      if(ent.l)st.removed++;               // 本機還有這筆、被其他裝置刪掉才算「刪除了一筆」
+      return;
+    }
+    if(!ent.l&&ent.c)st.added++;
+    out.push(w);
+  });
+  out.sort(function(a,b){return((Number(b.createdAt)||0)-(Number(a.createdAt)||0))||((Number(b.id)||0)-(Number(a.id)||0));});
+
+  var settingsLocalChanged=(lsGet('settings_fp','')!==settingsFp());
+  var mergedMerchants=merchants.slice();
+  (Array.isArray(d.merchants)?d.merchants:[]).forEach(function(m){if(mergedMerchants.indexOf(m)<0)mergedMerchants.push(m);});
+
+  _noDirty=true;_applyingCloud=true;
+  try{
+    expenses=out;nextId=nid;
+    tombstones={};for(k in tomb){if(tomb[k]>0)tombstones[k]=tomb[k];}
+    if(!settingsLocalChanged){
+      if(d.currencies)currencies=d.currencies;
+      if(d.wallets)wallets=d.wallets;
+      if(d.cats)cats=d.cats;
+      if(d.projects)projects=d.projects;
+      if(d.fixed)fixedItems=d.fixed;
+      if(d.quickItems)quickItems=d.quickItems;
+      if(d.theme!==undefined)activeThemeIdx=d.theme;
+    }
+    merchants=mergedMerchants;
+    saveAll();
+  }finally{_noDirty=false;_applyingCloud=false;}
+  lsSet('nextId',nextId);
+  lsSet('syncedRev',Number(d.rev)||0);   // 之後上傳以「雲端目前版本」為基準
+  lsSet('dirty',true);                   // 合併結果還沒上傳
+  lsSet('settings_fp',settingsFp());
+  applyTheme(activeThemeIdx);updateSyncBadge();
+  var res={added:st.added,updated:st.updated,removed:st.removed,total:out.length,settingsKeptLocal:settingsLocalChanged};
+  lsSet('last_merge',Object.assign({ts:Date.now()},res));
+  return res;
+}
+function mergeToast(r){
+  return '🔀 已與雲端逐筆合併（新增 '+r.added+'、更新 '+r.updated+'、刪除 '+r.removed+'，共 '+r.total+' 筆）'+(r.settingsKeptLocal?'；設定沿用本機版本':'');
+}
+
+// ── 本機備份：匯出 JSON／CSV、匯入 JSON ─────────────────────────
+function backupStamp(){var d=new Date();return d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+'_'+pad2(d.getHours())+pad2(d.getMinutes());}
+function anchorDownload(blob,filename){
+  var a=document.createElement('a'),url=URL.createObjectURL(blob);
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},4000);
+  return true;
+}
+// 手機優先用系統分享（可選「儲存到檔案」）；不支援就直接下載
+function saveFileOut(filename,mime,text,withBom){
+  var blob=new Blob([withBom?'\ufeff'+text:text],{type:mime+';charset=utf-8'});
+  var file=null;try{file=new File([blob],filename,{type:mime});}catch(e){}
+  var done=function(ok){if(ok){lsSet('last_export',Date.now());updateBackupStatus();showToast('✅ 已匯出 '+filename);}};
+  if(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:filename}).then(function(){done(true);}).catch(function(err){
+      if(err&&err.name==='AbortError')return;       // 使用者自己關掉分享視窗
+      done(anchorDownload(blob,filename));
+    });
+    return;
+  }
+  done(anchorDownload(blob,filename));
+}
+function exportBackupJSON(){
+  var data={app:'life-log',format:2,exportedAt:new Date().toISOString(),
+    expenses:expenses,cats:cats,wallets:wallets,currencies:currencies,projects:projects,
+    fixed:fixedItems,quickItems:quickItems,merchants:merchants,nextId:nextId,theme:activeThemeIdx,tombstones:tombstones};
+  saveFileOut('life-log-backup_'+backupStamp()+'.json','application/json',JSON.stringify(data,null,1),false);
+}
+function csvCell(v,isText){
+  var t=(v===null||v===undefined)?'':String(v);
+  if(isText&&/^[=+\-@\t\r]/.test(t))t="'"+t;          // 避免在試算表被當成公式
+  return /[",\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;
+}
+function exportCSV(){
+  var head=['日期','類型','分類','子分類','商家','錢包','轉入錢包','幣別','金額','臺幣金額','專案','名稱','備註','ID'];
+  var tl={expense:'支出',income:'收入',transfer:'轉帳'};
+  var rows=[head.join(',')];
+  expenses.forEach(function(e){
+    rows.push([csvCell(e.date,true),csvCell(tl[e.type]||e.type,true),csvCell(e.cat,true),csvCell(e.sub,true),csvCell(e.merchant,true),
+      csvCell(e.wallet,true),csvCell(e.toWallet||'',true),csvCell(e.currency,true),csvCell(Number(e.amount)||0),csvCell(Number(e.twd)||0),
+      csvCell(e.proj,true),csvCell(e.name,true),csvCell(e.note,true),csvCell(e.id)].join(','));
+  });
+  saveFileOut('life-log-expenses_'+backupStamp()+'.csv','text/csv',rows.join('\r\n'),true);
+}
+function importBackupFile(inp){
+  var f=inp.files&&inp.files[0];inp.value='';          // 清掉，才能重複選同一個檔
+  if(!f)return;
+  var r=new FileReader();
+  r.onerror=function(){showToast('❌ 讀不到這個檔案');};
+  r.onload=function(){
+    var d;try{d=JSON.parse(String(r.result||'').replace(/^\ufeff/,''));}catch(e){showToast('❌ 不是有效的備份檔（JSON 格式錯誤）');return;}
+    if(!d||typeof d!=='object'||!Array.isArray(d.expenses)){showToast('❌ 這個檔案不是生活手帳備份（缺少記帳資料）');return;}
+    showConfirm('📥','匯入備份會取代本機資料','備份檔有 '+d.expenses.length+' 筆記帳，本機目前有 '+expenses.length+' 筆。確定後本機資料（包含尚未上傳的修改）會被備份檔取代，之後可再上傳雲端。確定要匯入嗎？',function(){doImportBackup(d);});
+  };
+  r.readAsText(f,'utf-8');
+}
+function doImportBackup(d){
+  var prevRev=lsGet('syncedRev',0),prevOnce=lsGet('syncedOnce',false),prevSync=lsGet('last_sync',0),oldIds={};
+  expenses.forEach(function(e){oldIds[String(e.id)]=true;});
+  applyCloudData(d);                                    // 沿用同一套資料檢查與正規化
+  var now=Date.now();
+  expenses.forEach(function(e){e.updatedAt=now;delete oldIds[String(e.id)];});   // 匯入＝使用者的明確選擇，在其他裝置合併時要贏
+  for(var k in oldIds){tombstones[k]=now;}               // 備份裡沒有的舊資料視為已刪除
+  _noDirty=true;_applyingCloud=true;try{saveAll();}finally{_noDirty=false;_applyingCloud=false;}
+  lsSet('syncedRev',prevRev);lsSet('syncedOnce',prevOnce);lsSet('dirty',true);lsSet('settings_fp','');lsSet('last_sync',prevSync);
+  updateSyncBadge();renderAllAfterSync();
+  showToast('✅ 已匯入備份（'+expenses.length+' 筆），尚未上傳雲端');
+  if(lsGet('gas_url',''))debouncedPush();
+}
+function updateBackupStatus(){
+  var el=document.getElementById('backup-status');if(!el)return;
+  var t=Number(lsGet('last_export',0))||0;
+  if(!t){el.textContent='尚未匯出過備份';el.style.color='var(--am)';return;}
+  var days=Math.floor((Date.now()-t)/86400000);
+  el.textContent='上次匯出：'+new Date(t).toLocaleDateString()+(days>=7?'（已超過 '+days+' 天，建議再匯出一次）':'');
+  el.style.color=days>=7?'var(--am)':'var(--t3)';
 }
 
 function renderAllAfterSync(){
@@ -1547,12 +1879,12 @@ function pullFromGAS(opts){
   showToast('⬇️ 下載中…');gasStatus('下載中…');
   gasRequest({action:'load'},function(err,d){
     if(err){
-      showToast('❌ 下載失敗，請確認 Apps Script 已部署');
+      showToast('❌ 暫時連不上雲端，本機資料沒有變動，請稍後再試');
       gasStatus('❌ 請確認 Apps Script 網址與部署（'+err.message+'）',false);
       return;
     }
     if(d&&d.ok===false){
-      showToast('❌ 雲端回傳錯誤：'+(d.msg||'未知'));
+      showToast('❌ 雲端回傳錯誤：'+(d.msg||'未知')+'（本機資料沒有變動）');
       gasStatus('❌ 雲端回傳錯誤：'+(d.msg||'未知'),false);
       return;
     }
@@ -1718,7 +2050,7 @@ function openProjBillModal(pi){
   projBillIdx=pi;
   var p=projects[pi];
   document.getElementById('proj-bill-title').textContent='📄 '+p.flag+' '+p.name+' — 批次更新帳單';
-  var foreignExp=expenses.filter(function(e){return projMatch(e.proj,p)&&e.currency!=='TWD'&&e.type==='expense';});
+  var foreignExp=expenses.filter(function(e){return projMatch(e.proj,p)&&e.currency!=='TWD'&&isExp(e);});
   if(!foreignExp.length){showToast('此專案無外幣支出記錄');return;}
   var h='';
   foreignExp.forEach(function(e){
@@ -1787,6 +2119,7 @@ function hmGoToday(){
 }
 
 function renderHome(){
+  try{renderHomeBanners();}catch(_e){}
   var months=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
   var now=new Date();
   var isCurrentMonth=(hmDispY===now.getFullYear()&&hmDispM===now.getMonth());
@@ -1867,7 +2200,7 @@ function renderAIHome(){
   var stats=calcMonthStats();
   if(stats.expense===0&&stats.income===0){el.textContent='🌸 還沒有本月記帳記錄，快來新增第一筆吧！';return;}
   var catSummary='';var catMap={};
-  expenses.forEach(function(e){if(e.date&&e.date.slice(0,7)===todayStr().slice(0,7)){catMap[e.cat]=(catMap[e.cat]||0)+e.twd;}});
+  expenses.forEach(function(e){if(isExp(e)&&!e.proj&&e.date&&e.date.slice(0,7)===todayStr().slice(0,7)){catMap[e.cat]=(catMap[e.cat]||0)+(Number(e.twd)||0);}});
   Object.keys(catMap).forEach(function(k){catSummary+=k+' NT$'+catMap[k]+' ';});
   el.textContent='🌸 分析中…';
   geminiText([{text:'你是可愛溫暖的財務小顧問「小帳精靈」。語氣可愛、不說教、只提觀察與建議、多用emoji。200字以內，繁體中文。\n本月：'+catSummary+'\n收入：NT$'+stats.income+'  支出：NT$'+stats.expense+'  結餘：NT$'+(stats.income-stats.expense)}],300,function(err,txt){
@@ -1889,7 +2222,7 @@ function expHTML(e){
   var eid=esc(e.id!=null?e.id:'');
   var icoBg=isIn?'rgba(45,122,72,0.15)':col+'33';
   var icoStyle='background:'+icoBg+';border:1.5px solid '+(isIn?'rgba(45,122,72,0.25)':col+'55')+';box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)';
-  return '<div class="ei" data-eid="'+eid+'"><div class="eico" style="'+icoStyle+'">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+esc(e.date||'')+(wallet?' · '+wallet:'')+(e.sub?' · '+esc(e.sub):'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':e.type==='transfer'?'':'ex')+'">'+(isIn?'+':e.type==='transfer'?'↔ ':'-')+amtStr+'</div>'+twdLine+'</div></div>';
+  return '<div class="ei" data-eid="'+eid+'"><div class="eico" style="'+icoStyle+'">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+esc(e.date||'')+(wallet?' · '+wallet:'')+(e.sub?' · '+esc(e.sub):'')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':e.type==='transfer'?'↔ ':'-')+amtStr+'</div>'+twdLine+'</div></div>';
 }
 function bindExpClicks(container){container.querySelectorAll('.ei').forEach(function(el){el.addEventListener('click',function(){viewExp(parseInt(el.dataset.eid));});});}
 
@@ -1898,7 +2231,7 @@ function viewExp(id){
   var e=null;for(var i=0;i<expenses.length;i++){if(expenses[i].id===id){e=expenses[i];break;}}if(!e)return;
   document.getElementById('ov-exp-t').textContent=e.note||e.sub||e.cat||'記帳';
   var isIn=e.type==='income',amtStr=e.currency==='TWD'?'NT$'+numOr(e.amount).toLocaleString():esc(e.currency)+' '+numOr(e.amount).toLocaleString();
-  document.getElementById('ov-exp-b').innerHTML='<div class="sg" style="margin-bottom:10px"><div class="sc"><div class="sl">日期</div><div style="font-size:12px;font-weight:700">'+esc(e.date)+'</div></div><div class="sc"><div class="sl">錢包</div><div style="font-size:12px;font-weight:700">'+esc(e.wallet)+(e.type==='transfer'&&e.toWallet?' → '+esc(e.toWallet):'')+'</div></div><div class="sc"><div class="sl">分類</div><div style="font-size:12px;font-weight:700">'+esc(e.cat)+'</div></div></div><div class="sc" style="margin-bottom:10px"><div class="sl">金額</div><div style="font-size:20px;font-weight:900;color:'+(isIn?'var(--gr)':e.type==='transfer'?'var(--t2)':'var(--rd)')+';">'+(isIn?'+':e.type==='transfer'?'↔ ':'-')+amtStr+'</div>'+(e.currency!=='TWD'?'<div style="font-size:11px;color:var(--t3);font-weight:600">≈ NT$'+numOr(e.twd).toLocaleString()+'</div>':'')+(e.billEdited?'<div class="bedit" style="display:inline-flex;margin-top:5px">📄 '+esc(e.billNote||'帳單已更新')+'</div>':'')+'</div>'+(e.note?'<div class="sc"><div class="sl">備註</div><div style="font-size:13px;font-weight:600">'+esc(e.note)+'</div></div>':'');
+  document.getElementById('ov-exp-b').innerHTML='<div class="sg" style="margin-bottom:10px"><div class="sc"><div class="sl">日期</div><div style="font-size:12px;font-weight:700">'+esc(e.date)+'</div></div><div class="sc"><div class="sl">錢包</div><div style="font-size:12px;font-weight:700">'+esc(e.wallet)+(e.type==='transfer'&&e.toWallet?' → '+esc(e.toWallet):'')+'</div></div><div class="sc"><div class="sl">分類</div><div style="font-size:12px;font-weight:700">'+esc(e.cat)+'</div></div></div><div class="sc" style="margin-bottom:10px"><div class="sl">金額</div><div style="font-size:20px;font-weight:900;color:'+(isIn?'var(--gr)':'var(--rd)')+';">'+(isIn?'+':e.type==='transfer'?'↔ ':'-')+amtStr+'</div>'+(e.currency!=='TWD'?'<div style="font-size:11px;color:var(--t3);font-weight:600">≈ NT$'+numOr(e.twd).toLocaleString()+'</div>':'')+(e.billEdited?'<div class="bedit" style="display:inline-flex;margin-top:5px">📄 '+esc(e.billNote||'帳單已更新')+'</div>':'')+'</div>'+(e.note?'<div class="sc"><div class="sl">備註</div><div style="font-size:13px;font-weight:600">'+esc(e.note)+'</div></div>':'');
   document.getElementById('ov-edit').onclick=function(){closeOv('ov-exp');editExp(id);};
   document.getElementById('ov-copy-exp').onclick=function(){
     closeOv('ov-exp');
@@ -1942,7 +2275,7 @@ function viewExp(id){
 
 // ── ADD PAGE ─────────────────────────────────────────────────
 function renderAddPage(){
-  fillSel('f-cur',currencies);fillWalSel('f-wallet');fillWalSel('f-to-wallet');fillProjSel('f-proj');
+  fillSel('f-cur',currencies);fillWalSel('f-wallet');fillWalSel('f-to-wallet');(function(){var t=document.getElementById('f-to-wallet');if(t){t.insertAdjacentHTML('afterbegin','<option value="">（不指定）</option>');t.value='';}})();fillProjSel('f-proj');
   if(!document.getElementById('f-date').value)document.getElementById('f-date').value=todayStr();
   applyExpTypeUI();
 }
@@ -2036,22 +2369,15 @@ document.getElementById('type-tabs').addEventListener('click',function(e){
 });
 
 function applyExpTypeUI(){
+  // 轉帳＝「從某個帳戶轉出一筆費用」：和支出一樣有分類、商家；轉入錢包只是選填
   var isTr=(expType==='transfer');
-  var catRow=document.getElementById('cat-row');
-  var merchantRow=document.getElementById('merchant-row');
-  var toRow=document.getElementById('to-wallet-row');
-  var lbl=document.getElementById('f-wallet-lbl');
-  if(catRow)catRow.style.display=isTr?'none':'flex';
-  if(merchantRow)merchantRow.style.display=isTr?'none':'';
+  var catRow=document.getElementById('cat-row'),merchantRow=document.getElementById('merchant-row');
+  var toRow=document.getElementById('to-wallet-row'),lbl=document.getElementById('f-wallet-lbl');
+  if(catRow)catRow.style.display='flex';
+  if(merchantRow)merchantRow.style.display='';
   if(toRow)toRow.style.display=isTr?'block':'none';
   if(lbl)lbl.textContent=isTr?'👛 轉出錢包':'👛 錢包';
-  if(isTr){
-    // 預設轉入錢包挑一個和轉出不同的
-    var from=document.getElementById('f-wallet'),to=document.getElementById('f-to-wallet');
-    if(from&&to&&to.options.length>1&&to.value===from.value){
-      for(var oi=0;oi<to.options.length;oi++){if(to.options[oi].value!==from.value){to.selectedIndex=oi;break;}}
-    }
-  }else renderCatSelects();
+  renderCatSelects();
 }
 
 function calcFX(){
@@ -2177,11 +2503,13 @@ document.getElementById('auto-fx-confirm').addEventListener('click',function(){
   var pending=window._autoFxPending||[];
   var checks=document.querySelectorAll('#auto-fx-list [data-auto-fi]');
   var today=todayStr();
-  var count=0;
+  var count=0,skippedDup=0;
   checks.forEach(function(cb){
     if(!cb.checked)return;
     var f=pending[parseInt(cb.dataset.autoFi)];
     if(!f)return;
+    // 對話框開著的期間若剛好同步進來同一筆，這裡再擋一次，避免重複入帳
+    if(expenses.some(function(x){return x.date===today&&(x.note||x.name)===f.name;})){skippedDup++;return;}
     // 找分類完整名稱
     var catStr=f.cat;
     for(var ci=0;ci<cats.length;ci++){
@@ -2216,8 +2544,11 @@ document.getElementById('auto-fx-confirm').addEventListener('click',function(){
     saveAll();
     lsSet('mb_auto_fx_done',today);
     renderHome();
-    showToast('✅ 已匯入 '+count+' 筆固定收支！');
+    showToast('✅ 已匯入 '+count+' 筆固定收支！'+(skippedDup?'（另有 '+skippedDup+' 筆今天已入帳，已略過）':''));
     debouncedPush();
+  }else if(skippedDup){
+    lsSet('mb_auto_fx_done',today);
+    showToast('ℹ️ 這些固定收支今天已經入帳過了');
   }
   closeOv('ov-auto-fx');
 });
@@ -2288,15 +2619,17 @@ document.getElementById('btn-again').addEventListener('click',function(){
   if(catSelEl&&catSelEl.value)activeCat=catSelEl.value;
   if(subSelEl)activeSub=subSelEl.value||'';
   var cat=null;for(var i=0;i<cats.length;i++){if(cats[i].name===activeCat){cat=cats[i];break;}}
-  var catStr=expType==='transfer'?'↔️ 轉帳':cat?cat.icon+' '+cat.name:'📦 其他';
+  var catStr=cat?cat.icon+' '+cat.name:'📦 其他';
   var note=document.getElementById('f-note').value;
   var merchant=document.getElementById('f-merchant').value.trim();
   var proj=document.getElementById('f-proj').value||'';
-  var obj={id:nextId++,name:note||catStr,cat:catStr,sub:activeSub,wallet:document.getElementById('f-wallet').value,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:false,billNote:'',merchant:merchant,proj:proj,createdAt:Date.now()};
+  var obj={id:nextId++,name:note||(expType==='transfer'?'轉帳 '+catStr:catStr),cat:catStr,sub:activeSub,wallet:document.getElementById('f-wallet').value,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:false,billNote:'',merchant:merchant,proj:proj,createdAt:Date.now()};
   if(expType==='transfer'){
-    var tw=document.getElementById('f-to-wallet');
-    obj.toWallet=tw?tw.value:'';obj.sub='';obj.merchant='';
-    if(!obj.toWallet||obj.toWallet===obj.wallet){showToast('⚠️ 請選擇不同的轉入錢包');return;}
+    var tw=document.getElementById('f-to-wallet'),tv=tw?tw.value:'';
+    if(tv&&tv!=='（無錢包）'){
+      if(tv===obj.wallet){showToast('⚠️ 轉入錢包不能和轉出錢包相同（不需要時請選「不指定」）');return;}
+      obj.toWallet=tv;
+    }
   }
   expenses.unshift(obj);lsSet('nextId',nextId);saveAll();debouncedPush();
   // 自動新增商家到清單
@@ -2322,21 +2655,13 @@ document.getElementById('submit-btn').addEventListener('click',function(){
   var cat=null;
   var catStr='↔️ 轉帳';
   var walletVal=document.getElementById('f-wallet').value;
+  var toWalletVal='';
   if(expType==='transfer'){
-    // 轉帳：使用轉出/轉入錢包
-    var fromWal=document.getElementById('f-from-wallet');
-    var toWal=document.getElementById('f-to-wallet');
-    walletVal=fromWal?fromWal.value:walletVal;
-    var toWalletVal=toWal?toWal.value:'';
-    if(!toWalletVal||toWalletVal==='（無錢包）'){showToast('⚠️ 請選擇轉入錢包');return;}
-    if(walletVal===toWalletVal){showToast('⚠️ 轉出與轉入帳戶不能相同');return;}
-    catStr='↔️ 轉帳';
-    var obj={id:eid?parseInt(eid):nextId++,name:note||('轉帳 '+walletVal+'→'+toWalletVal),cat:catStr,sub:'',wallet:walletVal,toWallet:toWalletVal,date:date,amount:amt,currency:code,twd:twd,note:note,type:'transfer',billEdited:false,billNote:'',merchant:'',proj:proj,createdAt:(function(){for(var k=0;k<expenses.length;k++){if(String(expenses[k].id)===String(eid)&&expenses[k].createdAt)return expenses[k].createdAt;}return Date.now();})()};
-    if(eid){for(var i=0;i<expenses.length;i++){if(expenses[i].id===parseInt(eid)){expenses[i]=obj;break;}}showToast('💾 已儲存修改');}
-    else{expenses.unshift(obj);showToast('✅ 轉帳記錄完成！');}
-    lsSet('nextId',nextId);saveAll();finishAdd();
-    debouncedPush();
-    return;
+    var toWal=document.getElementById('f-to-wallet'),tv0=toWal?toWal.value:'';
+    if(tv0&&tv0!=='（無錢包）'){
+      if(tv0===walletVal){showToast('⚠️ 轉入錢包不能和轉出錢包相同（不需要時請選「不指定」）');return;}
+      toWalletVal=tv0;
+    }
   }
   // 支出 / 收入
   var catSelEl=document.getElementById('f-cat');
@@ -2347,7 +2672,8 @@ document.getElementById('submit-btn').addEventListener('click',function(){
   catStr=cat?cat.icon+' '+cat.name:'📦 其他';
   var billAmt=document.getElementById('f-bill').value;var billEdited=!!billAmt&&parseFloat(billAmt)>0;
   var eid=document.getElementById('f-eid').value;
-  var merchant=document.getElementById('f-merchant').value.trim();var proj=document.getElementById('f-proj').value||'';var existExp=null;if(eid){for(var ei2=0;ei2<expenses.length;ei2++){if(expenses[ei2].id===parseInt(eid)){existExp=expenses[ei2];break;}}}var obj={id:eid?parseInt(eid):nextId++,name:note||catStr,cat:catStr,sub:activeSub,wallet:walletVal,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:billEdited,billNote:billEdited?'帳單金額 NT$'+billAmt:'',merchant:merchant,proj:proj,createdAt:(existExp&&existExp.createdAt)||Date.now()};
+  var merchant=document.getElementById('f-merchant').value.trim();var proj=document.getElementById('f-proj').value||'';var existExp=null;if(eid){for(var ei2=0;ei2<expenses.length;ei2++){if(expenses[ei2].id===parseInt(eid)){existExp=expenses[ei2];break;}}}var obj={id:eid?parseInt(eid):nextId++,name:note||(expType==='transfer'?'轉帳 '+catStr:catStr),cat:catStr,sub:activeSub,wallet:walletVal,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:billEdited,billNote:billEdited?'帳單金額 NT$'+billAmt:'',merchant:merchant,proj:proj,createdAt:(existExp&&existExp.createdAt)||Date.now()};
+  if(toWalletVal)obj.toWallet=toWalletVal;
   if(eid){for(var i=0;i<expenses.length;i++){if(expenses[i].id===parseInt(eid)){expenses[i]=obj;break;}}showToast('💾 已儲存修改');}
   else{expenses.unshift(obj);showToast('✅ 記帳成功！');}
   // Auto-add merchant to list if new
@@ -2472,7 +2798,7 @@ function renderProjects(){
       if(!pExps.length){
         detEl.innerHTML='<div class="empty" style="padding:8px;font-size:12px">此專案尚無記帳記錄</div>';
       } else {
-        var h='<div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:6px">共 '+pExps.length+' 筆 · 合計 NT$'+pExps.reduce(function(s,e2){return s+(e2.type==='expense'?e2.twd:0);},0).toLocaleString()+'</div>';
+        var h='<div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:6px">共 '+pExps.length+' 筆 · 合計 NT$'+pExps.reduce(function(s,e2){return s+(isExp(e2)?e2.twd:0);},0).toLocaleString()+'</div>';
         for(var k=0;k<pExps.length;k++)h+=expHTML(pExps[k]);
         detEl.innerHTML=h;
         bindExpClicks(detEl);
@@ -2505,8 +2831,9 @@ function buildCatMap(filteredExp){
   }
   for(var i=0;i<filteredExp.length;i++){
     var e=filteredExp[i];
-    if(e.type==='expense'){
+    if(isExp(e)){
       var catKey=e.cat||'';
+      if(e.type==='transfer'&&!map[catKey])map[catKey]={cat:catKey,amount:0,color:'#8a8a8a'};
       if(map[catKey]){
         map[catKey].amount+=(Number(e.twd)||0);
       } else {
@@ -2665,7 +2992,7 @@ function renderReports(){
     filtered.forEach(function(e){
       var d=parseInt((e.date||'').split('-')[2])||0;
       if(d>=1&&d<=daysInMonth){
-        if(e.type==='expense')dailyExp[d]+=(Number(e.twd)||0);
+        if(isExp(e))dailyExp[d]+=(Number(e.twd)||0);
         else if(e.type==='income')dailyInc[d]+=(Number(e.twd)||0);
       }
     });
@@ -2695,7 +3022,7 @@ function renderReports(){
     }
     // 月份收支小結
     var inc=0,exp=0;
-    filtered.forEach(function(e){if(e.type==='income')inc+=(Number(e.twd)||0);else if(e.type==='expense')exp+=(Number(e.twd)||0);});
+    filtered.forEach(function(e){if(e.type==='income')inc+=(Number(e.twd)||0);else if(isExp(e))exp+=(Number(e.twd)||0);});
     // 收支比圓餅圖
     if(inc>0||exp>0){
       var total2=inc+exp;
@@ -2732,7 +3059,7 @@ function renderReports(){
     renderRptChart(rptData,null,'各類支出（'+y+'年全年）');
     // 月份趨勢 bar
     var monthlyExp=new Array(12).fill(0),monthlyInc=new Array(12).fill(0);
-    filtered.forEach(function(e){var mm=new Date(e.date).getMonth();if(e.type==='expense')monthlyExp[mm]+=e.twd;else if(e.type==='income')monthlyInc[mm]+=e.twd;});
+    filtered.forEach(function(e){var mm=new Date(e.date).getMonth();if(isExp(e))monthlyExp[mm]+=e.twd;else if(e.type==='income')monthlyInc[mm]+=e.twd;});
     var maxM=Math.max.apply(null,monthlyExp.concat(monthlyInc))||1;
     var trendH='<div style="margin-top:12px"><div style="font-size:12px;font-weight:800;margin-bottom:6px;color:var(--tx)">📈 全年月份趨勢</div>';
     trendH+='<div style="display:flex;gap:3px;align-items:flex-end;height:60px;margin-bottom:4px">';
@@ -2835,7 +3162,7 @@ function updateCalMonthSummary(){
     var e=expenses[i],d=new Date(e.date);
     if(d.getFullYear()===calY&&d.getMonth()===calM){
       if(e.type==='income')inc+=e.twd;
-      else if(e.type==='expense')exp+=e.twd;
+      else if(isExp(e))exp+=e.twd;
     }
   }
   var balEl=document.getElementById('cal-bal');
@@ -2931,7 +3258,7 @@ function doHomeSearch(){
   list_el.style.display='none';
   var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px"><span style="font-size:10px;color:var(--t3);font-weight:700">找到 '+res.length+' 筆結果</span>';
   if(res.length){
-    var total=0;res.forEach(function(e){if(e.type==='expense')total+=e.twd;});
+    var total=0;res.forEach(function(e){if(isExp(e))total+=e.twd;});
     h+='<span style="font-size:11px;font-weight:800;color:var(--rd)">共 NT$'+total.toLocaleString()+'</span>';
   }
   h+='</div>';
@@ -2981,7 +3308,7 @@ document.getElementById('hm-sort').addEventListener('change',renderHome);
 
 // ── SETTINGS ─────────────────────────────────────────────────
 var setPanes=['theme','wallets','cats','fixed','cur','lock','merchant'];
-function renderSettings(){renderThemeCards();}
+function renderSettings(){renderThemeCards();updateBackupStatus();}
 document.getElementById('set-tabs').addEventListener('click',function(e){
   var t=e.target;if(!t.classList.contains('tab'))return;
   var tabs=document.querySelectorAll('#set-tabs .tab'),idx=Array.prototype.indexOf.call(tabs,t);
@@ -3560,6 +3887,9 @@ function clearAdvSearch(){
 
 // ── INIT ─────────────────────────────────────────────────────
 GAS_URL=lsGet('gas_url','')||GAS_URL;
+touchExpenses();   // 為既有記帳建立 updatedAt 基準（升級後第一次開啟）
+if(!lsGet('backup_since',0))lsSet('backup_since',Date.now());   // 備份提醒的起算日
+setInterval(function(){try{updateSyncBadge();}catch(_e){}},30000);   // 讓「5 分鐘前」會跟著走
 // Warn if opened from file:// (cloud sync won't work)
 if(location.protocol==='file:'){
   setTimeout(function(){
@@ -3573,19 +3903,29 @@ if(location.protocol==='file:'){
 renderHome();
 renderAddPage();
 initRptPickers();
-// 開啟頁面時自動檢查月底固定收支
-setTimeout(function(){checkAutoApplyFixed();},1200);
+// 固定收支自動入帳：要等「啟動同步」有結果才檢查。
+// 以前在開啟 1.2 秒就檢查，早於雲端同步；另一台裝置已入帳、這台尚未同步時會重複入帳。
+// 現在只有在確認「本機已含雲端最新資料」（或根本沒啟用雲端）時才檢查；
+// 同步失敗／離線／密鑰有問題時這次先不自動入帳，可用記帳頁的「固定收支」手動套用。
+var _fxAutoDone=false;
+function autoFixedAfterSync(){
+  if(_fxAutoDone)return;_fxAutoDone=true;
+  setTimeout(function(){checkAutoApplyFixed();},400);
+}
 // ── 啟動同步：用「雲端版本號 rev」判斷，不再用筆數比較 ──────────
 (function(){
   updateSyncBadge();
   var url=lsGet('gas_url','')||'';
   GAS_URL=url||GAS_URL;
-  if(!(url&&url.indexOf('script.google.com')>=0))return;
+  if(!(url&&url.indexOf('script.google.com')>=0)){autoFixedAfterSync();return;}   // 沒啟用雲端：只有本機，直接檢查
   if(!(lsGet('gas_key','')||'')){gasStatus('🔑 尚未設定同步密鑰',false);setTimeout(function(){showToast('🔑 請到設定頁填入同步密鑰才能同步');},1800);return;}
   setTimeout(function(){
     gasRequest({action:'load'},function(err,d){
       if(d&&d.ok===false&&(d.code==='UNAUTHORIZED'||d.code==='NO_KEY')){gasStatus('🔑 '+(d.msg||'同步密鑰錯誤'),false);showToast('🔑 同步密鑰有問題，請到設定頁確認');return;}
-      if(err||!d||d.ok===false||!d.expenses)return;      // 靜默：失敗不打擾使用者
+      if(err||!d||d.ok===false||!d.expenses){            // 不彈窗打擾，但要讓膠囊與首頁提醒看得到
+        gasStatus(navigator.onLine===false?'📵 離線中，資料安全存於本機':'❌ 啟動時連不上雲端（'+((err&&err.message)||'回應異常')+'）資料仍安全存於本機',false);
+        return;
+      }
       var cloudRev=Number(d.rev)||0;
       var syncedRev=Number(lsGet('syncedRev',0))||0;
       var dirty=!!lsGet('dirty',false);
@@ -3593,26 +3933,37 @@ setTimeout(function(){checkAutoApplyFixed();},1200);
       var cloudN=d.expenses.length,localN=expenses.length;
 
       if(!once){
-        if(cloudN===0){lsSet('syncedOnce',true);return;}   // 雲端是空的：首次設定，之後的修改可自動上傳
+        if(cloudN===0){lsSet('syncedOnce',true);autoFixedAfterSync();return;}   // 雲端是空的：首次設定，之後的修改可自動上傳
         if(cloudRev===0&&localN>0&&cloudN<=localN){
           // 舊版雲端（無版本號）且本機資料不少於雲端 → 視為原本使用的裝置，
           // 標記為待上傳，讓雲端升級成新欄位格式（伺服器會先自動快照）
           lsSet('syncedOnce',true);lsSet('dirty',true);updateSyncBadge();debouncedPush();
+          autoFixedAfterSync();
           return;
         }
         gasStatus('偵測到雲端資料，等待確認…');
         showConfirm('☁️','發現雲端資料','雲端有 '+cloudN+' 筆、本機有 '+localN+' 筆。按「確定」＝下載雲端資料（本機會被取代）。若這是你原本記帳的裝置，請按「取消」保留本機，再到設定頁按「上傳」。',function(){
           applyCloudData(d);renderAllAfterSync();showToast('✅ 資料已從雲端還原（'+cloudN+' 筆）');
+          autoFixedAfterSync();
         });
         return;
       }
-      if(cloudRev===syncedRev)return;                      // 雲端沒有新版本
+      if(cloudRev===syncedRev){lsSet('last_sync',Date.now());clearSyncIssue();updateSyncBadge();autoFixedAfterSync();return;}   // 雲端沒有新版本
       if(!dirty){
         applyCloudData(d);renderAllAfterSync();
         showToast('🔄 已從雲端同步最新資料');
+        autoFixedAfterSync();
       }else{
-        showToast('⚠️ 雲端與本機都有新修改，請到設定頁選擇「上傳」或「下載」');
-        gasStatus('⚠️ 同步衝突：雲端與本機都有新修改',false);
+        // 雲端與本機都有新修改：逐筆合併後再上傳
+        try{
+          var mr=mergeWithCloud(d);renderAllAfterSync();
+          showToast(mergeToast(mr));gasStatus('🔀 已逐筆合併，準備上傳');
+          pushToGAS({silent:true,_mergeTry:1});
+          autoFixedAfterSync();
+        }catch(me){
+          showToast('⚠️ 雲端與本機都有新修改，合併失敗，請到設定頁選擇「上傳」或「下載」');
+          gasStatus('⚠️ 同步衝突：雲端與本機都有新修改',false);
+        }
       }
     });
   },1500);
