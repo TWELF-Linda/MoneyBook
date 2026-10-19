@@ -666,8 +666,13 @@ input::placeholder{color:var(--t3);font-weight:400}
         <button class="btn bg2 bsm" onclick="document.getElementById('backup-file').click()">📥 匯入備份</button>
       </div>
       <input type="file" id="backup-file" accept=".json,application/json" style="display:none" onchange="importBackupFile(this)"/>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--t2)"><label for="backup-remind-sel">⏰ 備份提醒</label><select id="backup-remind-sel" onchange="setBackupRemind(this.value)" style="font-size:12px;padding:4px 6px"><option value="7">超過 7 天</option><option value="14">超過 14 天</option><option value="30">超過 30 天</option><option value="0">不提醒</option></select></div>
       <div id="backup-status" style="font-size:11px;color:var(--t3);font-weight:600"></div>
     </div>
+    <p class="stitle">🧾 匯入信用卡帳單</p>
+    <div class="card"><div style="font-size:11px;color:var(--t3);font-weight:600;line-height:1.8;margin-bottom:8px">選擇銀行寄來的帳單 PDF（永豐、台新、星展、中信），在手機上解析，不會上傳。解析後可逐筆修改、刪除、新增，再匯入記帳。</div>
+      <button class="btn bp bsm" onclick="document.getElementById('imp-file').click()">📄 選擇帳單 PDF</button>
+      <input type="file" id="imp-file" accept=".pdf,application/pdf" style="display:none" onchange="impPick(this)"/></div>
   </div>
   <div id="set-wallets" style="display:none"><div id="wl-list"></div><button class="btn bp bsm" id="btn-add-wl">＋ 新增錢包</button></div>
   <div id="set-cats" style="display:none">
@@ -701,6 +706,12 @@ input::placeholder{color:var(--t3);font-weight:400}
 <div class="ov" id="ov-proj"><div class="modal"><div class="mh"></div><div class="mt" id="proj-mt">新增旅遊專案</div><div class="fg"><label class="fl">旗幟圖示</label><input type="text" id="pj-ico" placeholder="🇯🇵" style="width:62px"/></div><div class="fg"><label class="fl">專案名稱</label><input type="text" id="pj-name" placeholder="例：日本東京行"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">起始日</label><input type="date" id="pj-st"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">結束日</label><input type="date" id="pj-en"/></div></div><div class="fg"><label class="fl">預設幣別</label><select id="pj-cur"></select></div><div class="fg"><label class="fl">預算 (TWD)</label><input type="number" id="pj-bud" placeholder="25000"/></div><div class="mbtns"><button class="btn bp bfw" id="pj-save">✅ 儲存專案</button><button class="btn bg2" id="pj-cancel">取消</button></div><input type="hidden" id="pj-idx" value=""></div></div>
 <div class="ov" id="ov-wl"><div class="modal"><div class="mh"></div><div class="mt" id="wl-mt">新增錢包</div><div class="fg"><label class="fl">選擇圖示</label><div id="wl-icons" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px"></div></div><div class="fg"><label class="fl">錢包名稱</label><input type="text" id="wl-name" placeholder="例：旅遊現金"/></div><div class="mbtns"><button class="btn bp bfw" id="wl-save">✅ 儲存</button><button class="btn bg2" id="wl-cancel">取消</button></div><input type="hidden" id="wl-idx" value=""></div></div>
 <div class="ov" id="ov-cat"><div class="modal"><div class="mh"></div><div class="mt" id="cat-mt">新增分類</div><div class="fr" style="margin-bottom:10px"><div class="fg" style="width:65px;margin-bottom:0"><label class="fl">圖示</label><input type="text" id="ct-ico" placeholder="🍜"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">名稱</label><input type="text" id="ct-name" placeholder="餐飲"/></div><div class="fg" style="width:55px;margin-bottom:0"><label class="fl">顏色</label><input type="color" id="ct-color" value="#b85e28" style="height:36px;padding:2px"/></div></div><div class="fg"><label class="fl">🏷 適用類型</label><select id="ct-type" style="font-size:13px"><option value="">收入 &amp; 支出（通用）</option><option value="expense">💸 僅支出</option><option value="income">💚 僅收入</option></select></div><div class="fg"><label class="fl">💰 月預算上限 (TWD)<span style="color:var(--t3);font-size:11px"> 超過 80% 會警告，不設定留空</span></label><input type="text" inputmode="decimal" id="ct-budget" placeholder="例：5000"/></div><div class="fg"><label class="fl">子分類 <span style="font-weight:400;color:var(--t3)">(可新增/刪除/排序)</span></label><div id="sub-editor"></div><button class="btn bg2 bsm" style="margin-top:6px" id="btn-add-sub">＋ 新增子類別</button></div><div class="mbtns"><button class="btn bp bfw" id="cat-save">✅ 儲存分類</button><button class="btn bg2" id="cat-cancel">取消</button></div><input type="hidden" id="ct-idx" value=""></div></div>
+<div class="ov" id="ov-import"><div class="modal"><div class="mh"></div><div class="mt">🧾 匯入帳單預覽</div>
+<div class="fg"><label class="fl">💳 匯入到錢包</label><select id="imp-wallet"></select></div>
+<div id="imp-sum" style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px"></div>
+<div id="imp-list"></div>
+<button class="btn bg2 bsm" id="imp-add" style="margin:4px 0 10px">＋ 新增一列</button>
+<div class="mbtns"><button class="btn bp bfw" id="imp-go">✅ 匯入勾選項目</button><button class="btn bg2" onclick="closeOv('ov-import')">取消</button></div></div></div>
 <div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390" inputmode="decimal"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">🔁 週期</label><select id="fx-period" onchange="updateFxPeriodUI()"><option value="monthly">每月</option><option value="yearly">每年</option><option value="weekly">每週</option><option value="daily">每天</option></select></div><div class="fg" id="fx-month-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📆 月份</label><select id="fx-month"></select></div><div class="fg" id="fx-day-wrap" style="flex:1;margin-bottom:0"><label class="fl">📅 幾號</label><select id="fx-day"><option value="0">月底</option></select></div><div class="fg" id="fx-wd-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📅 星期</label><select id="fx-wd"><option value="0">週日</option><option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option><option value="6">週六</option></select></div></div><div class="fg"><label class="fl">▶️ 開始日期 <span style="color:var(--t3);font-size:11px;font-weight:600">（這天起才會提醒入帳，不會補更早的）</span></label><input type="date" id="fx-since"/></div><div class="fg"><label class="fl">💳 錢包</label><select id="fx-wallet"></select></div><div class="fg"><label class="fl">分類</label><select id="fx-cat" onchange="updateFxSub()"></select></div><div class="fg"><label class="fl">子分類</label><select id="fx-sub"></select></div><div class="fg"><label class="fl">🏪 商家 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填）</span></label><input type="text" id="fx-merchant" list="fx-merchant-list" placeholder="例：Netflix、房東" autocomplete="off"/><datalist id="fx-merchant-list"></datalist></div><div class="fg"><label class="fl">📝 備註 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填，入帳時會帶入）</span></label><input type="text" id="fx-note" placeholder="例：家庭方案、含管理費" autocomplete="off"/></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
 <div class="ov" id="ov-cur"><div class="modal"><div class="mh"></div><div class="mt" id="cur-mt">新增幣別</div><div class="fg"><label class="fl">代碼</label><input type="text" id="cu-code" placeholder="AUD" style="width:80px"/></div><div class="fg"><label class="fl">名稱</label><input type="text" id="cu-name" placeholder="澳幣"/></div><div class="fg"><label class="fl">對 TWD 匯率</label><input type="number" id="cu-rate" placeholder="21.5" step="0.0001"/></div><div class="mbtns"><button class="btn bp bfw" id="cur-save">✅ 儲存</button><button class="btn bg2" id="cur-cancel">取消</button></div><input type="hidden" id="cu-idx" value=""></div></div>
 <div class="cov" id="cov"><div class="cbox"><div class="cico" id="c-ico">⚠️</div><div class="ctit" id="c-tit">確定嗎？</div><div class="cmsg" id="c-msg">此操作無法復原。</div><div style="display:flex;gap:8px"><button class="btn bd2 bfw" id="c-ok">確認</button><button class="btn bg2 bfw" id="c-cancel">取消</button></div></div></div>
@@ -1012,6 +1023,116 @@ var undoT=null,undoFn=null;
 function showUndo(msg,fn){var bar=document.getElementById('undo-bar');document.getElementById('undo-msg').textContent=msg;undoFn=fn;bar.classList.add('on');if(undoT)clearTimeout(undoT);undoT=setTimeout(hideUndo,6000);}
 function hideUndo(){document.getElementById('undo-bar').classList.remove('on');undoFn=null;if(undoT){clearTimeout(undoT);undoT=null;}}
 document.getElementById('undo-btn').addEventListener('click',function(){var f=undoFn;hideUndo();if(f)f();});
+
+// ── 匯入信用卡帳單（PDF）──────────────────────────────────────
+var impRows=[];
+function impNorm(t){return t.normalize('NFKC').replace(/[−–—]/g,'-').replace(/\s+/g,' ').trim();}
+function impOk(r,aRe){var a=r.match(aRe);return !!(a&&/[A-Za-z\u4e00-\u9fff]/.test(a[1]));}
+function impDate(t,c){var p=t.split('/').map(Number);if(p.length===3)return (p[0]<1911?p[0]+1911:p[0])+'-'+pad2(p[1])+'-'+pad2(p[2]);return (p[0]>c.m?c.y-1:c.y)+'-'+pad2(p[0])+'-'+pad2(p[1]);}
+function impParse(lines){
+  var L=lines.map(impNorm).filter(Boolean),close=null,out=[],bal=null,i,m;
+  for(i=0;i<L.length&&!close;i++){m=L[i].match(/結帳日 ?(\d{2,4})\/(\d{2})\/\d{2}/)||(i<40?L[i].match(/^(\d{4})\/(\d{2})\/\d{2} \d{4}\/\d{2}\/\d{2}/):null);if(m)close={y:+m[1]<1911?+m[1]+1911:+m[1],m:+m[2]};}
+  if(!close){var nd=new Date();close={y:nd.getFullYear(),m:nd.getMonth()+1};}
+  var D='(\\d{2,4}\\/\\d{2}\\/\\d{2}|\\d{2}\\/\\d{2})',dRe=new RegExp('^'+D+' '+D+'(?: (\\d{4}))?(?: (.*))?$'),
+      aRe=/^(.*?) (-?\d[\d,]*)((?: \d{4})?(?: [A-Z]{2})?(?: [A-Z]{3} -?[\d,]+\.\d+)?)$/,num=function(x){return +x.replace(/,/g,'');};
+  for(i=0;i<L.length;i++){
+    var t=L[i];
+    if((m=t.match(/^\d{5}\*+\d+\*? ([\d,]+)$/))){bal=num(m[1]);continue;}
+    if((m=t.match(/^(\d{4}\/\d{2}\/\d{2}) (\d{8,}) ([\d,]+) ([\d,]+)$/))){   // 帳戶對帳單（中信）：摘要文字讀不到，用餘額增減判斷收支
+      var nb=num(m[4]);out.push({date:m[1].replace(/\//g,'-'),desc:'帳戶轉帳 '+m[2],twd:num(m[3]),type:(bal!==null&&nb>bal)?'income':'expense',flag:'帳戶交易，PDF 讀不到摘要文字，請自行填寫名稱'});bal=nb;continue;}
+    if(!(m=t.match(dRe)))continue;
+    var date=impDate(m[1],close),rest=m[4]||'',j=i;
+    while(!impOk(rest,aRe)&&j<i+3&&j+1<L.length&&!dRe.test(L[j+1])){j++;rest=(rest+' '+L[j]).trim();}   // 說明折行
+    if(!impOk(rest,aRe))continue;
+    i=j;var a=rest.match(aRe),n=num(a[2]),cm=a[3].match(/([A-Z]{3}) (-?[\d,]+\.\d+)/),r={date:date,desc:a[1].replace(/^連加\*/,'').trim(),twd:Math.abs(n),type:n<0?'income':'expense',flag:''};
+    if(cm){r.cur=cm[1];r.orig=Math.abs(+cm[2].replace(/,/g,''));}
+    if(/自扣|自動轉帳|繳款|已入帳|扣繳/.test(a[1]))r.flag='繳款／還款，不是消費';
+    else if(n<0)r.flag='退款（以收入匯入）';
+    else if(/服務費|違約金|利息/.test(a[1].replace(/ /g,'')))r.flag='手續費／利息';
+    out.push(r);
+  }
+  return out;
+}
+function impCatOpts(type){var w=type==='income'?'income':'expense',l=cats.filter(function(c){return (c.type||'expense')===w;});return l.length?l:cats;}
+function impDefCat(type){var o=impCatOpts(type)[0];return o?o.icon+' '+o.name:'📦 其他';}
+function impShow(rows,name){
+  if(!rows.length){showToast('⚠️ 沒有讀到消費明細，可能是不支援的格式或掃描檔');return;}
+  rows.forEach(function(r){
+    var key=r.desc.slice(0,5).toLowerCase(),f=null;
+    for(var i=0;i<expenses.length&&!f;i++){var e=expenses[i];if(e.type===r.type&&key.length>=2&&((e.merchant||'')+(e.note||'')+(e.name||'')).toLowerCase().indexOf(key)>=0)f=e;}
+    r.cat=f?f.cat:impDefCat(r.type);r.on=!/繳款／還款/.test(r.flag);
+    if(expenses.some(function(e){return e.date===r.date&&Number(e.twd)===r.twd&&!e.proj;})){r.on=false;r.flag=(r.flag?r.flag+'；':'')+'疑似已記過';}
+  });
+  impRows=rows;fillWalSel('imp-wallet');var w=lsGet('imp_wallet','');if(w)document.getElementById('imp-wallet').value=w;
+  impRender();openOv('ov-import');
+}
+function impRender(){
+  var h='',ex=0,inc=0,n=0;
+  impRows.forEach(function(r,i){
+    if(r.on){n++;if(r.type==='income')inc+=r.twd;else ex+=r.twd;}
+    var opts=impCatOpts(r.type).map(function(c){var v=c.icon+' '+c.name;return '<option'+(v===r.cat?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+    if(opts.indexOf('selected')<0)opts='<option selected>'+esc(r.cat)+'</option>'+opts;
+    var at=' data-ii="'+i+'" data-f=';
+    h+='<div class="card" style="padding:8px;margin-bottom:6px'+(r.on?'':';opacity:.6')+'"><div style="display:flex;gap:6px;align-items:center"><input type="checkbox" aria-label="匯入這筆"'+(r.on?' checked':'')+at+'"on" style="width:20px;height:20px;flex:none"/><input type="date" value="'+esc(r.date)+'"'+at+'"date" style="flex:1.4"/><select'+at+'"type" style="flex:.8"><option value="expense"'+(r.type==='expense'?' selected':'')+'>支出</option><option value="income"'+(r.type==='income'?' selected':'')+'>收入</option></select><input type="number" inputmode="decimal" value="'+r.twd+'"'+at+'"twd" style="flex:1"/></div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><input type="text" value="'+esc(r.desc)+'"'+at+'"desc" style="flex:2"/><select'+at+'"cat" style="flex:1.2">'+opts+'</select><button aria-label="刪除這列" class="bico" data-idel="'+i+'">🗑</button></div>'+(r.flag?'<div style="font-size:11px;color:var(--am);font-weight:700;margin-top:4px">⚠️ '+esc(r.flag)+'</div>':'')+'</div>';
+  });
+  document.getElementById('imp-list').innerHTML=h;
+  document.getElementById('imp-sum').textContent='共 '+impRows.length+' 列，勾選 '+n+' 筆｜支出 NT$'+Math.round(ex).toLocaleString()+(inc?'｜收入 NT$'+Math.round(inc).toLocaleString():'')+'（可對照帳單金額）';
+}
+function impLoadPdfJs(cb){
+  if(window.pdfjsLib)return cb();
+  var sc=document.createElement('script'),B='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  sc.src=B+'pdf.min.js';sc.onload=function(){pdfjsLib.GlobalWorkerOptions.workerSrc=B+'pdf.worker.min.js';cb();};
+  sc.onerror=function(){showToast('❌ 無法載入 PDF 讀取元件，請確認網路');};document.head.appendChild(sc);
+}
+function impPick(inp){
+  var f=inp.files&&inp.files[0];inp.value='';if(!f)return;
+  var fr=new FileReader();fr.onload=function(){impLoadPdfJs(function(){
+    var task=pdfjsLib.getDocument({data:new Uint8Array(fr.result)});
+    task.onPassword=function(cb,reason){var pw=prompt(reason===2?'密碼錯誤，請再輸入一次':'此 PDF 需要密碼');if(pw===null)task.destroy();else cb(pw);};
+    task.promise.then(function(pdf){
+      var lines=[],n=1;
+      (function next(){
+        if(n>pdf.numPages)return impShow(impParse(lines),f.name);
+        pdf.getPage(n++).then(function(pg){return pg.getTextContent();}).then(function(tc){
+          var g={};tc.items.forEach(function(it){var k=Math.round(it.transform[5]/3);(g[k]=g[k]||[]).push(it);});
+          Object.keys(g).map(Number).sort(function(a,b){return b-a;}).forEach(function(k){lines.push(g[k].sort(function(a,b){return a.transform[4]-b.transform[4];}).map(function(it){return it.str;}).join(' '));});
+          next();
+        });
+      })();
+    }).catch(function(e){showToast('❌ 讀不到這個 PDF：'+((e&&e.message)||e));});
+  });};
+  fr.readAsArrayBuffer(f);
+}
+document.getElementById('imp-list').addEventListener('change',function(e){
+  var t=e.target,i=t.dataset.ii;if(i===undefined)return;
+  var r=impRows[+i],f=t.dataset.f;
+  r[f]=t.type==='checkbox'?t.checked:(f==='twd'?Math.abs(parseFloat(t.value)||0):t.value);
+  if(f==='type')r.cat=impDefCat(r.type);
+  impRender();
+});
+document.getElementById('imp-list').addEventListener('click',function(e){var b=e.target.closest('[data-idel]');if(b){impRows.splice(+b.dataset.idel,1);impRender();}});
+document.getElementById('imp-add').addEventListener('click',function(){impRows.push({on:true,date:todayStr(),desc:'',twd:0,type:'expense',cat:impDefCat('expense'),flag:''});impRender();});
+document.getElementById('imp-go').addEventListener('click',function(){
+  var w=document.getElementById('imp-wallet').value,n=0;
+  impRows.forEach(function(r){
+    if(!r.on||!(r.twd>0)||!r.date)return;
+    var cur='TWD',amt=r.twd;
+    if(r.cur&&r.orig&&currencies.some(function(c){return c.code===r.cur;})){cur=r.cur;amt=r.orig;}
+    expenses.unshift({id:nextId++,name:r.desc||r.cat,cat:r.cat,sub:'',wallet:w,date:r.date,amount:amt,currency:cur,twd:Math.round(r.twd),note:r.desc,type:r.type,billEdited:false,billNote:'',merchant:'',proj:'',createdAt:Date.now()});n++;
+  });
+  if(!n){showToast('⚠️ 沒有勾選任何項目');return;}
+  lsSet('imp_wallet',w);lsSet('nextId',nextId);saveAll();debouncedPush();closeOv('ov-import');refreshViews();showToast('✅ 已匯入 '+n+' 筆');
+});
+function refreshViews(){
+  renderHome();
+  var on=function(id){var pg=document.getElementById('pg-'+id);return pg&&pg.classList.contains('on');};
+  try{
+    if(on('reports')){renderReports();renderCalendar();}
+    if(on('search'))renderSearch();
+    if(on('projects'))renderProjects();
+    var hs=document.getElementById('hm-search');if(hs&&(hs.value||'').trim())doHomeSearch();
+  }catch(_e){}
+}
 function showToast(msg){var el=document.getElementById('toast-el');el.textContent=msg;el.classList.add('on');if(toastT)clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('on');},2400);}
 window.showToast=showToast;
 
@@ -1432,9 +1553,13 @@ function isIOSBrowserTab(){
   return ios&&!standalone;   // 加到主畫面開啟的 App 不受「7 天清除」影響，不提醒
 }
 function backupDays(){
-  var ref=Number(lsGet('last_export',0))||Number(lsGet('backup_since',0))||Date.now();
+  // 以「最近一次匯出檔案」或「最近一次成功同步雲端」較新者為準
+  var t=Math.max(Number(lsGet('last_export',0))||0,lsGet('gas_url','')?(Number(lsGet('last_sync',0))||0):0);
+  var ref=t||Number(lsGet('backup_since',0))||Date.now();
   return Math.floor((Date.now()-ref)/86400000);
 }
+function backupRemindDays(){var v=Number(lsGet('backup_remind_days',14));return v>=0?v:14;}   // 0＝不提醒
+function setBackupRemind(v){lsSet('backup_remind_days',parseInt(v)||0);lsSet('backup_remind_dismiss',0);updateBackupStatus();renderHomeBanners();showToast('✅ 已更新備份提醒');}
 function bannerHTML(msg,btnLabel,btnJs,dismissJs){
   return '<div class="card" style="padding:10px 12px;margin-bottom:8px;display:flex;gap:8px;align-items:center;border-color:var(--am)"><div style="flex:1;font-size:12px;font-weight:700;line-height:1.6">'+msg+'</div>'+
     (btnLabel?'<button class="btn bp bsm" onclick="'+btnJs+'">'+btnLabel+'</button>':'')+
@@ -1449,9 +1574,12 @@ function renderHomeBanners(){
       f.action==='settings'?'前往設定':'立即同步',f.action==='settings'?"openSyncSettings()":'syncNow()',
       "lsSet('banner_sync_dismiss',"+issue.ts+");renderHomeBanners()");
   }
-  if(isIOSBrowserTab()&&expenses.length>0&&backupDays()>=7&&(Date.now()-(Number(lsGet('backup_remind_dismiss',0))||0))>7*86400000){
-    h+=bannerHTML('💾 已經 <b>'+backupDays()+' 天</b>沒匯出備份。iOS 瀏覽器約 7 天沒開啟，網站資料可能被清除。建議匯出一份備份，或把 App 加到主畫面。',
-      '立即匯出','exportBackupJSON()',"lsSet('backup_remind_dismiss',Date.now());renderHomeBanners()");
+  var rd=backupRemindDays();
+  if(rd>0&&expenses.length>0&&backupDays()>=rd&&(Date.now()-(Number(lsGet('backup_remind_dismiss',0))||0))>3*86400000){
+    var msg=isIOSBrowserTab()
+      ?'💾 已經 <b>'+backupDays()+' 天</b>沒備份。iOS 瀏覽器約 7 天沒開啟，網站資料可能被清除。建議匯出一份備份，或把 App 加到主畫面。'
+      :'💾 已經 <b>'+backupDays()+' 天</b>沒有匯出備份或同步雲端。換手機或清除瀏覽器資料時可能遺失，建議匯出一份備份。';
+    h+=bannerHTML(msg,'立即匯出','exportBackupJSON()',"lsSet('backup_remind_dismiss',Date.now());renderHomeBanners()");
   }
   el.innerHTML=h;
 }
@@ -1649,7 +1777,7 @@ function cleanCloudSettings(d){
   if((a=objs(d.wallets)))d.wallets=a.map(function(w){return Object.assign({},w,{icon:strOf(w.icon),name:strOf(w.name),active:!!w.active});});
   if((a=objs(d.cats)))d.cats=a.map(function(c){return Object.assign({},c,{icon:strOf(c.icon),name:strOf(c.name),color:safeColor(c.color),sub:strs(c.sub),subs:strs(c.subs),budget:c.budget?(numOr(c.budget)||undefined):undefined,type:(c.type==='expense'||c.type==='income')?c.type:undefined});});
   if((a=objs(d.projects)))d.projects=a.map(function(p){return Object.assign({},p,{flag:strOf(p.flag),name:strOf(p.name),start:strOf(p.start),end:strOf(p.end),currency:strOf(p.currency),budget:numOr(p.budget),spent:numOr(p.spent)});});
-  if((a=objs(d.fixed)))d.fixed=a.map(function(f){return Object.assign({},f,{name:strOf(f.name),cat:strOf(f.cat),sub:strOf(f.sub),currency:strOf(f.currency)||'TWD',wallet:strOf(f.wallet),period:strOf(f.period)||'monthly',amount:numOr(f.amount),dayOfMonth:numOr(f.dayOfMonth),since:strOf(f.since),month:(f.month===undefined||f.month===null||f.month==='')?undefined:numOr(f.month),weekday:(f.weekday===undefined||f.weekday===null||f.weekday==='')?undefined:numOr(f.weekday),type:f.type==='income'?'income':'expense'});});
+  if((a=objs(d.fixed)))d.fixed=a.map(function(f){return Object.assign({},f,{name:strOf(f.name),merchant:strOf(f.merchant),note:strOf(f.note),fid:strOf(f.fid),cat:strOf(f.cat),sub:strOf(f.sub),currency:strOf(f.currency)||'TWD',wallet:strOf(f.wallet),period:strOf(f.period)||'monthly',amount:numOr(f.amount),dayOfMonth:numOr(f.dayOfMonth),since:strOf(f.since),month:(f.month===undefined||f.month===null||f.month==='')?undefined:numOr(f.month),weekday:(f.weekday===undefined||f.weekday===null||f.weekday==='')?undefined:numOr(f.weekday),type:f.type==='income'?'income':'expense'});});
   if((a=objs(d.quickItems)))d.quickItems=a.map(function(q){return Object.assign({},q,{name:strOf(q.name),cat:strOf(q.cat),sub:strOf(q.sub),wallet:strOf(q.wallet),currency:strOf(q.currency)||'TWD',amount:numOr(q.amount),type:q.type==='income'?'income':'expense'});});
   if(Array.isArray(d.merchants))d.merchants=d.merchants.map(strOf);
   if(d.theme!==undefined)d.theme=numOr(d.theme);
@@ -1711,6 +1839,7 @@ function normCloudExp(ex){
     note:ex.note||'',proj:ex.proj||'',billEdited:!!ex.billEdited,billNote:ex.billNote||'',
     createdAt:Number(ex.createdAt)||0,updatedAt:Number(ex.updatedAt)||0};
   if(ex.toWallet)o.toWallet=ex.toWallet;
+  if(ex.fx)o.fx=String(ex.fx);
   return o;
 }
 // 逐筆合併：兩邊各自的修改都保留。同一筆兩邊都改過 → 取 updatedAt 較新的；
@@ -1804,7 +1933,7 @@ function anchorDownload(blob,filename){
 function saveFileOut(filename,mime,text,withBom){
   var blob=new Blob([withBom?'\ufeff'+text:text],{type:mime+';charset=utf-8'});
   var file=null;try{file=new File([blob],filename,{type:mime});}catch(e){}
-  var done=function(ok){if(ok){lsSet('last_export',Date.now());updateBackupStatus();showToast('✅ 已匯出 '+filename);}};
+  var done=function(ok){if(ok){lsSet('last_export',Date.now());updateBackupStatus();try{renderHomeBanners();}catch(_e){}showToast('✅ 已匯出 '+filename);}};
   if(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
     navigator.share({files:[file],title:filename}).then(function(){done(true);}).catch(function(err){
       if(err&&err.name==='AbortError')return;       // 使用者自己關掉分享視窗
@@ -1863,11 +1992,13 @@ function doImportBackup(d){
 }
 function updateBackupStatus(){
   var el=document.getElementById('backup-status');if(!el)return;
+  var sel=document.getElementById('backup-remind-sel');if(sel)sel.value=String(backupRemindDays());
   var t=Number(lsGet('last_export',0))||0;
   if(!t){el.textContent='尚未匯出過備份';el.style.color='var(--am)';return;}
   var days=Math.floor((Date.now()-t)/86400000);
-  el.textContent='上次匯出：'+new Date(t).toLocaleDateString()+(days>=7?'（已超過 '+days+' 天，建議再匯出一次）':'');
-  el.style.color=days>=7?'var(--am)':'var(--t3)';
+  var rd=backupRemindDays(),stale=rd>0&&days>=rd;
+  el.textContent='上次匯出：'+new Date(t).toLocaleDateString()+(stale?'（已超過 '+days+' 天，建議再匯出一次）':'');
+  el.style.color=stale?'var(--am)':'var(--t3)';
 }
 
 function renderAllAfterSync(){
@@ -2288,8 +2419,8 @@ function viewExp(id){
     var idx=-1;for(var di=0;di<expenses.length;di++){if(expenses[di].id===id){idx=di;break;}}
     if(idx<0)return;
     var removed=expenses[idx],nm=(e.note||e.sub||e.cat||'此記錄');
-    expenses=expenses.filter(function(x){return x.id!==id;});saveAll();closeOv('ov-exp');renderHome();debouncedPush();
-    showUndo('🗑️ 已刪除「'+nm+'」',function(){expenses.splice(Math.min(idx,expenses.length),0,removed);saveAll();renderHome();debouncedPush();showToast('↩️ 已復原');});
+    expenses=expenses.filter(function(x){return x.id!==id;});saveAll();closeOv('ov-exp');refreshViews();debouncedPush();
+    showUndo('🗑️ 已刪除「'+nm+'」',function(){expenses.splice(Math.min(idx,expenses.length),0,removed);saveAll();refreshViews();debouncedPush();showToast('↩️ 已復原');});
   };
   document.getElementById('ov-cls').onclick=function(){closeOv('ov-exp');};
   openOv('ov-exp');
@@ -2489,7 +2620,7 @@ function fxToTWD(amount,code){
 // 舊資料沒有開始日期：視為本月 1 號起算（本月漏掉的可以補，更早的不追）
 function fxEnsureSince(){
   var ch=false,ms=todayStr().slice(0,7)+'-01';
-  fixedItems.forEach(function(f){if(f&&!f.since){f.since=ms;ch=true;}});
+  fixedItems.forEach(function(f){if(f&&!f.since){f.since=ms;ch=true;}if(f&&!f.fid){f.fid=fxMakeFid(f.name,f.type);ch=true;}});
   if(ch)lsSet('fixed',fixedItems);
 }
 // 回傳 [from,to]（含）之間所有應入帳日，格式 YYYY-MM-DD
@@ -2532,17 +2663,20 @@ function fxPeriodRange(per,due){
   if(per==='yearly')return[d.getFullYear()+'-01-01',d.getFullYear()+'-12-31'];
   return[due.slice(0,7)+'-01',due.slice(0,7)+'-31'];
 }
+// 固定收支的穩定 ID：由「類型＋最初的名稱」算出，各裝置算出來一樣；之後改名不會變
+function fxMakeFid(name,type){return 'f'+djb2((type||'expense')+'|'+name);}
 function fxIsDone(f,due){
-  var r=fxPeriodRange(f.period||'monthly',due),isInc=(f.type==='income');
+  var r=fxPeriodRange(f.period||'monthly',due),isInc=(f.type==='income'),fid=f.fid||fxMakeFid(f.name,f.type);
   for(var i=0;i<expenses.length;i++){
     var e=expenses[i];
     if(!e||!e.date||e.date<r[0]||e.date>r[1])continue;
     if(isInc?(e.type!=='income'):!isExp(e))continue;
-    if(e.name===f.name||(e.note||e.name)===f.name)return true;
+    if(e.fx){if(e.fx===fid)return true;continue;}          // 有標記：只認標記，改名稱／備註都不影響
+    if(e.name===f.name||(e.note||e.name)===f.name)return true;   // 舊資料沒有標記：沿用名稱比對
   }
   return false;
 }
-function fxSkipKey(f,due){return f.name+'|'+f.type+'|'+due;}
+function fxSkipKey(f,due){return (f.fid||f.name)+'|'+f.type+'|'+due;}
 function fxPending(){
   fxEnsureSince();
   var today=todayStr(),lb=new Date();lb.setDate(lb.getDate()-FX_LOOKBACK_DAYS);
@@ -2551,7 +2685,7 @@ function fxPending(){
     if(!f||!f.active)return;
     var from=(f.since&&f.since>lbStr)?f.since:lbStr;
     fxDueDates(f,from,today).forEach(function(due){
-      if(skipped[fxSkipKey(f,due)])return;
+      if(skipped[fxSkipKey(f,due)]||skipped[f.name+'|'+f.type+'|'+due])return;
       if(fxIsDone(f,due))return;
       list.push({f:f,due:due});
     });
@@ -2628,7 +2762,7 @@ document.getElementById('auto-fx-confirm').addEventListener('click',function(){
       id:nextId++,name:f.name,cat:catStr,sub:f.sub||'',
       wallet:f.wallet||(wallets.length?wallets[0].icon+' '+wallets[0].name:'💳 信用卡'),
       date:due,amount:f.amount,currency:f.currency,twd:fxToTWD(f.amount,f.currency),
-      note:f.note||f.name,type:f.type,billEdited:false,billNote:'',merchant:f.merchant||'',proj:'',
+      note:f.note||f.name,type:f.type,billEdited:false,billNote:'',merchant:f.merchant||'',proj:'',fx:f.fid||fxMakeFid(f.name,f.type),
       createdAt:Date.now()
     };
     expenses.unshift(obj);count++;
@@ -2768,6 +2902,7 @@ document.getElementById('submit-btn').addEventListener('click',function(){
   var eid=document.getElementById('f-eid').value;
   var merchant=document.getElementById('f-merchant').value.trim();var proj=document.getElementById('f-proj').value||'';var existExp=null;if(eid){for(var ei2=0;ei2<expenses.length;ei2++){if(expenses[ei2].id===parseInt(eid)){existExp=expenses[ei2];break;}}}var obj={id:eid?parseInt(eid):nextId++,name:note||(expType==='transfer'?'轉帳 '+catStr:catStr),cat:catStr,sub:activeSub,wallet:walletVal,date:date,amount:amt,currency:code,twd:twd,note:note,type:expType,billEdited:billEdited,billNote:billEdited?'帳單金額 NT$'+billAmt:'',merchant:merchant,proj:proj,createdAt:(existExp&&existExp.createdAt)||Date.now()};
   if(toWalletVal)obj.toWallet=toWalletVal;
+  if(existExp&&existExp.fx)obj.fx=existExp.fx;   // 編輯時保留「來自哪個固定收支」
   if(eid){for(var i=0;i<expenses.length;i++){if(expenses[i].id===parseInt(eid)){expenses[i]=obj;break;}}showToast('💾 已儲存修改');}
   else{expenses.unshift(obj);showToast('✅ 記帳成功！');}
   // Auto-add merchant to list if new
@@ -3923,6 +4058,7 @@ document.getElementById('fx-save').addEventListener('click',function(){
     weekday:per==='weekly'?(isNaN(w)?1:w):undefined,
     since:document.getElementById('fx-since').value||todayStr(),
     wallet:document.getElementById('fx-wallet').value,
+    fid:(old&&old.fid)||fxMakeFid(name,tp),
     merchant:document.getElementById('fx-merchant').value.trim(),
     note:document.getElementById('fx-note').value.trim(),
     active:old?old.active!==false:true   // 編輯時保留原本的啟用／停用狀態
