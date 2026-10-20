@@ -1126,6 +1126,7 @@ function impShow(rows,name,metas,dropped){
     var key=r.desc.slice(0,5).toLowerCase(),f=null,ru=rules[impRk(r)];
     for(var i=0;i<expenses.length&&!f;i++){var e=expenses[i];if(e.type===r.type&&key.length>=2&&((e.merchant||'')+(e.note||'')+(e.name||'')).toLowerCase().indexOf(key)>=0)f=e;}
     r.cat=ru?ru.c:(f?f.cat:impDefCat(r.type));r.merchant=ru?ru.m:(r.type==='transfer'?'':impMerch(r.desc));r.on=true;
+    r.sub=(ru&&ru.s)||(!ru&&f&&f.sub)||'';if(impSubs(r.cat).indexOf(r.sub)<0)r.sub='';r.proj='';r.note=r.desc;
     r.excl=r.type==='transfer'?'':impExclHit(r.desc+' '+(r.merchant||''),excl);if(r.excl)r.on=false;   // 排除名單：預設不勾
     var cs=r.c4||[],k;r.card='';r.wallet=dw;r.walAuto=false;r.mapped=false;
     for(k=0;k<cs.length;k++){var wm=impWalByCard(cs[k]);if(wm){r.card=cs[k];r.wallet=wm;r.walAuto=true;r.mapped=true;break;}}
@@ -1142,18 +1143,34 @@ function impShow(rows,name,metas,dropped){
 }
 function impWalOpts(sel){var h='',f=false;for(var i=0;i<wallets.length;i++){if(!wallets[i].active)continue;var v=wallets[i].icon+' '+wallets[i].name;if(v===sel)f=true;h+='<option'+(v===sel?' selected':'')+'>'+esc(v)+'</option>';}if(sel&&!f)h='<option selected>'+esc(sel)+'</option>'+h;return h;}
 var IMP_COL=['#c0562b','#2f7d6b','#3b6fb6','#8a5aa8','#b8892a','#c0407a','#5a7a2a','#2a7a8a'];
+function impSubs(catStr){for(var i=0;i<cats.length;i++){if(cats[i].icon+' '+cats[i].name===catStr)return cats[i].subs||cats[i].sub||[];}return [];}
+function impProjOpts(sel){var now=todayStr(),h='<option value="">（無）</option>',f=false;for(var i=0;i<projects.length;i++){var p=projects[i];if(p.end>=now){var v=p.flag+' '+p.name;if(v===sel)f=true;h+='<option'+(v===sel?' selected':'')+'>'+esc(v)+'</option>';}}if(sel&&!f)h+='<option selected>'+esc(sel)+'</option>';return h;}
+function impCurOpts(sel){var h='',f=false;for(var i=0;i<currencies.length;i++){var c=currencies[i];if(c.code===sel)f=true;h+='<option value="'+esc(c.code)+'"'+(c.code===sel?' selected':'')+'>'+esc(c.code)+' '+esc(c.name)+'</option>';}if(sel&&!f)h+='<option value="'+esc(sel)+'" selected>'+esc(sel)+'</option>';return h;}
+// 欄位與順序比照「新增記帳」：類型 → 分類／子分類 → 商家 → 日期 → 金額／幣別 → 錢包／專案 → 轉入錢包(轉帳) → 備註
 function impRowHtml(r,i,col,old){
-  var acts=[['merge','沿用我記的'],['replace','改用帳單'],['both','兩筆都留'],['skip','都不動']],TS={expense:'支出',income:'收入',transfer:'轉帳'};
-  var tint=r.type==='income'?',inset 0 0 0 999px rgba(45,122,72,.09)':(r.type==='transfer'?',inset 0 0 0 999px rgba(26,80,160,.08)':''),h='';
-  var opts=impCatOpts(r.type).map(function(c){var v=c.icon+' '+c.name;return '<option'+(v===r.cat?' selected':'')+'>'+esc(v)+'</option>';}).join('');
-  if(opts.indexOf('selected')<0)opts='<option selected>'+esc(r.cat)+'</option>'+opts;
-  var at=' data-ii="'+i+'" data-f=',tr=r.type==='transfer';
-  var tsel=['expense','income','transfer'].map(function(t){return '<option value="'+t+'"'+(r.type===t?' selected':'')+'>'+TS[t]+'</option>';}).join('');
-  var wr=tr?'<span style="flex:none;font-size:11px;font-weight:700;color:var(--t3)">🏦 轉出</span><select'+at+'"from" style="flex:1">'+impWalOpts(r.from)+'</select><span style="flex:none">→</span><select'+at+'"wallet" style="flex:1">'+impWalOpts(r.wallet)+'</select>'
-    :'<span style="flex:none;font-size:11px;font-weight:700;color:'+(r.mapped?'var(--gr)':'var(--t3)')+'">💳 '+(r.card?'尾號 '+esc(r.card)+(r.mapped?' ✓':' 未對應'):'沒讀到尾號')+'</span><select'+at+'"wallet" style="flex:1.2">'+impWalOpts(r.wallet)+'</select><input type="text" value="'+esc(r.merchant||'')+'"'+at+'"merchant" placeholder="商家" style="flex:1;min-width:0"/>';
-  h+='<div class="card" style="padding:8px;margin-bottom:12px;border-left:6px solid '+col+';box-shadow:var(--sh)'+tint+(r.on?'':';opacity:.6')+'"><div style="display:flex;gap:6px;align-items:center"><input type="checkbox" aria-label="匯入這筆"'+(r.on?' checked':'')+at+'"on" style="width:20px;height:20px;flex:none"/><input type="date" value="'+esc(r.date)+'"'+at+'"date" style="flex:1.4"/><select'+at+'"type" style="flex:.8">'+tsel+'</select><input type="number" inputmode="decimal" value="'+r.twd+'"'+at+'"twd" style="flex:1"/></div><div style="display:flex;gap:6px;margin-top:6px;align-items:center"><input type="text" value="'+esc(r.desc)+'"'+at+'"desc" style="flex:2"/><select'+at+'"cat" style="flex:1.2">'+opts+'</select><button aria-label="刪除這列" class="bico" data-idel="'+i+'">🗑</button></div>'
-    +'<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'+wr+'</div>'
-    +(r.flag?'<div style="font-size:11px;color:var(--am);font-weight:700;margin-top:4px">⚠️ '+esc(r.flag)+'</div>':'')+(r.excl?'<div style="font-size:11px;color:var(--t3);font-weight:700;margin-top:4px">🚫 符合排除名單「'+esc(r.excl)+'」，已取消勾選</div>':'');
+  var acts=[['merge','沿用我記的'],['replace','改用帳單'],['both','兩筆都留'],['skip','都不動']];
+  var tr=r.type==='transfer',fo=!!(r.cur&&r.cur!=='TWD'),h='';
+  var tint=r.type==='income'?',inset 0 0 0 999px rgba(45,122,72,.09)':(tr?',inset 0 0 0 999px rgba(26,80,160,.08)':'');
+  var at=' data-ii="'+i+'" data-f=',G=function(fl,lbl,inner){return '<div class="fg" style="flex:'+fl+';min-width:0;margin-bottom:0"><label class="fl">'+lbl+'</label>'+inner+'</div>';};
+  var catOpts=impCatOpts(r.type).map(function(c){var v=c.icon+' '+c.name;return '<option'+(v===r.cat?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+  if(catOpts.indexOf('selected')<0)catOpts='<option selected>'+esc(r.cat)+'</option>'+catOpts;
+  var subOpts='<option value="">（無子分類）</option>'+impSubs(r.cat).map(function(x){return '<option'+(x===r.sub?' selected':'')+'>'+esc(x)+'</option>';}).join('');
+  var tabs=[['expense','💸 支出'],['income','💚 收入'],['transfer','↔️ 轉帳']].map(function(t){return '<div class="tab'+(r.type===t[0]?' on':'')+'" data-ii="'+i+'" data-itype="'+t[0]+'">'+t[1]+'</div>';}).join('');
+  var badge=tr?'🏦 繳款／還款':'💳 '+(r.card?'尾號 '+esc(r.card)+(r.mapped?' ✓':' 未對應'):'沒讀到尾號');
+  var M='margin-bottom:8px';
+  h+='<div class="card" style="padding:10px;margin-bottom:12px;border-left:6px solid '+col+';box-shadow:var(--sh)'+tint+(r.on?'':';opacity:.6')+'">'
+    +'<div style="display:flex;gap:8px;align-items:center;'+M+'"><input type="checkbox" aria-label="匯入這筆"'+(r.on?' checked':'')+at+'"on" style="width:20px;height:20px;flex:none"/><span style="flex:1;min-width:0;font-size:12px;font-weight:800;color:'+(r.mapped||tr?'var(--gr)':'var(--t2)')+'">'+badge+'</span><button aria-label="刪除這列" class="bico" data-idel="'+i+'">🗑</button></div>'
+    +'<div class="tabbar" style="margin-bottom:8px">'+tabs+'</div>'
+    +'<div class="fr" style="'+M+'">'+G(1,'🏷️ 分類','<select'+at+'"cat">'+catOpts+'</select>')+G(1,'📂 子分類','<select'+at+'"sub">'+subOpts+'</select>')+'</div>'
+    +'<div class="fg" style="'+M+'"><label class="fl">🏪 商家</label><input type="text" list="imp-mlist" value="'+esc(r.merchant||'')+'"'+at+'"merchant" placeholder="輸入或搜尋商家…" autocomplete="off"/></div>'
+    +'<div class="fg" style="'+M+'"><label class="fl">📅 日期</label><input type="date" value="'+esc(r.date)+'"'+at+'"date"/></div>'
+    +'<div class="fr" style="'+M+'">'+G(2,'💰 金額','<input type="number" inputmode="decimal" value="'+(fo?(r.orig||''):(r.twd||''))+'"'+at+'"amt"/>')+G(1.3,'幣別','<select'+at+'"cur">'+impCurOpts(fo?r.cur:'TWD')+'</select>')+'</div>'
+    +(fo?'<div class="fg" style="'+M+'"><label class="fl">📄 實際刷卡金額 (TWD)</label><input type="number" inputmode="decimal" value="'+r.twd+'"'+at+'"twd"/>'+(currencies.some(function(c){return c.code===r.cur;})?'':'<div style="font-size:11px;color:var(--am);font-weight:700;margin-top:4px">⚠️ 幣別 '+esc(r.cur)+' 還沒在設定裡新增，匯入時會以上面的 TWD 金額記帳</div>')+'</div>':'')
+    +'<div class="fr" style="'+M+'">'+G(1,'👛 '+(tr?'轉出錢包':'錢包'),'<select'+at+'"'+(tr?'from':'wallet')+'">'+impWalOpts(tr?r.from:r.wallet)+'</select>')+G(1,'✈️ 專案','<select'+at+'"proj">'+impProjOpts(r.proj)+'</select>')+'</div>'
+    +(tr?'<div class="fg" style="'+M+'"><label class="fl">👛 轉入錢包 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填，只是轉帳可不指定）</span></label><select'+at+'"wallet">'+impWalOpts(r.wallet)+'</select></div>':'')
+    +'<div class="fg" style="margin-bottom:0"><label class="fl">📝 備註</label><textarea rows="1" style="resize:vertical"'+at+'"note" placeholder="記點什麼吧…">'+esc(r.note||'')+'</textarea></div>'
+    +(r.flag?'<div style="font-size:11px;color:var(--am);font-weight:700;margin-top:6px">⚠️ '+esc(r.flag)+'</div>':'')
+    +(r.excl?'<div style="font-size:11px;color:var(--t3);font-weight:700;margin-top:6px">🚫 符合排除名單「'+esc(r.excl)+'」，已取消勾選</div>':'');
   if(old){
     var ot=Math.round(Number(old.twd)||0),nt=Math.round(r.twd);
     var hint={merge:(tr?'保留你記的轉帳，補上轉入錢包':'保留你的名稱／分類／備註，只把金額與錢包校正成帳單的'+(ot!==nt?'（金額不同，會標「帳單更新」）':'')+(r.wallet&&old.wallet!==r.wallet?'；錢包改為 '+r.wallet:'')),
@@ -1162,7 +1179,6 @@ function impRowHtml(r,i,col,old){
       +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">'+acts.map(function(x){return '<button class="btn bsm '+(r.act===x[0]?'bp':'bg2')+'" data-iact="'+i+'|'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div><div style="font-weight:600;color:var(--t2);margin-top:3px">'+esc(hint)+'</div></div>';
   }
   h+='</div>';
-
   return h;
 }
 function impReconHtml(){
@@ -1205,6 +1221,7 @@ function impRender(){
     if(impExclOpen)xord.forEach(function(i){var r=impRows[i];h+=impRowHtml(r,i,'#9a9a9a',null);});
   }
   var ck=Object.keys(cs);
+  h+='<datalist id="imp-mlist">'+merchants.map(function(m){return '<option value="'+esc(m)+'"></option>';}).join('')+'</datalist>';
   document.getElementById('imp-list').innerHTML=h;
   document.getElementById('imp-recon').innerHTML=impReconHtml();
   document.getElementById('imp-flt').textContent='👁 '+({'':'顯示全部',dup:'只看對到的',new:'只看沒對到的'})[impFlt];
@@ -1373,12 +1390,15 @@ impPwMigrate().then(impPwRender,impPwRender);impExclRender();
 document.getElementById('imp-list').addEventListener('change',function(e){
   var t=e.target,i=t.dataset.ii;if(i===undefined)return;
   var r=impRows[+i],f=t.dataset.f;
-  r[f]=t.type==='checkbox'?t.checked:(f==='twd'?Math.abs(parseFloat(t.value)||0):t.value);
-  if(f==='type'){r.cat=impDefCat(r.type);r.dup=null;if(r.type==='transfer'&&!r.from)r.from=impDefFrom(r.wallet);}
+  if(f==='amt'){var av=Math.abs(parseFloat(t.value)||0);if(r.cur&&r.cur!=='TWD')r.orig=av;else r.twd=av;}   // 金額：外幣列改的是外幣金額，台幣列改的是台幣金額
+  else if(f==='cur'){if(t.value==='TWD'){r.cur='';r.orig=0;}else{if(!(r.cur&&r.cur!=='TWD'))r.orig=0;r.cur=t.value;}}
+  else r[f]=t.type==='checkbox'?t.checked:(f==='twd'?Math.abs(parseFloat(t.value)||0):t.value);
+  if(f==='cat')r.sub='';
+  if(f==='type'){r.cat=impDefCat(r.type);r.sub='';r.dup=null;if(r.type==='transfer'&&!r.from)r.from=impDefFrom(r.wallet);}
   if(f==='wallet')r.walAuto=true;
   impRender();
 });
-document.getElementById('imp-list').addEventListener('click',function(e){if(e.target.closest('[data-iexcl]')){impExclOpen=!impExclOpen;impRender();return;}var ac=e.target.closest('[data-iact]');if(ac){var pp=ac.dataset.iact.split('|');impRows[+pp[0]].act=pp[1];impRender();return;}var b=e.target.closest('[data-idel]');if(b){impRows.splice(+b.dataset.idel,1);impRender();}});
+document.getElementById('imp-list').addEventListener('click',function(e){if(e.target.closest('[data-iexcl]')){impExclOpen=!impExclOpen;impRender();return;}var tb=e.target.closest('[data-itype]');if(tb){var tr0=impRows[+tb.dataset.ii];if(tr0.type!==tb.dataset.itype){tr0.type=tb.dataset.itype;tr0.cat=impDefCat(tr0.type);tr0.sub='';tr0.dup=null;if(tr0.type==='transfer'&&!tr0.from)tr0.from=impDefFrom(tr0.wallet);impRender();}return;}var ac=e.target.closest('[data-iact]');if(ac){var pp=ac.dataset.iact.split('|');impRows[+pp[0]].act=pp[1];impRender();return;}var b=e.target.closest('[data-idel]');if(b){impRows.splice(+b.dataset.idel,1);impRender();}});
 document.getElementById('imp-tools').addEventListener('click',function(e){
   var b=e.target.closest('[data-ib]');if(!b)return;var k=b.dataset.ib;
   if(k==='merge'||k==='skip')impRows.forEach(function(r){if(r.dup&&impFind(r.dup))r.act=k;});
@@ -1391,7 +1411,7 @@ document.getElementById('imp-reparse').addEventListener('click',function(){impRa
 document.getElementById('imp-rawcopy').addEventListener('click',function(){var v=document.getElementById('imp-raw').value;if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){showToast('📋 已複製');});});
 document.getElementById('imp-hist').addEventListener('click',function(e){var u=e.target.closest('[data-iundo]');if(!u)return;var b=lsGet('imp_batches',[])[+u.dataset.iundo];if(!b)return;showConfirm('↩️','撤銷這次匯入？','會刪除這次新增的 '+b.add.length+' 筆，並還原校正／取代的記錄；新增的那幾筆之後若有改過也會一併刪除。',function(){impRevert(b);});});
 document.getElementById('imp-wallet').addEventListener('change',function(){var w=this.value;impRows.forEach(function(r){if(!r.walAuto)r.wallet=w;});impRender();});
-document.getElementById('imp-add').addEventListener('click',function(){impRows.push({on:true,date:todayStr(),desc:'',twd:0,type:'expense',cat:impDefCat('expense'),flag:'',card:'',wallet:document.getElementById('imp-wallet').value,walAuto:false,mapped:false,dup:null,act:'merge',merchant:'',from:''});impRender();});
+document.getElementById('imp-add').addEventListener('click',function(){impRows.push({on:true,date:todayStr(),desc:'',twd:0,type:'expense',cat:impDefCat('expense'),flag:'',card:'',wallet:document.getElementById('imp-wallet').value,walAuto:false,mapped:false,dup:null,act:'merge',merchant:'',from:'',sub:'',proj:'',note:''});impRender();});
 document.getElementById('imp-go').addEventListener('click',function(){
   var dw=document.getElementById('imp-wallet').value,n=0,mg=0,rp=0,learn={},rules=lsGet('imp_rules',{}),b={id:Date.now(),ts:Date.now(),name:impName||'貼上文字',add:[],mod:[],del:[]};
   impRows.forEach(function(r){
@@ -1409,10 +1429,10 @@ document.getElementById('imp-go').addEventListener('click',function(){
     if(act==='replace'){b.del.push(JSON.parse(JSON.stringify(old)));expenses=expenses.filter(function(x){return x.id!==old.id;});rp++;}
     var cur='TWD',amt=r.twd,fr=tr?(r.from||impDefFrom(w)):'';
     if(r.cur&&r.orig&&currencies.some(function(c){return c.code===r.cur;})){cur=r.cur;amt=r.orig;}
-    var o={id:nextId++,name:r.desc||(tr?'信用卡繳款':r.cat),cat:r.cat,sub:'',wallet:tr?fr:w,date:r.date,amount:amt,currency:cur,twd:Math.round(r.twd),note:r.desc,type:r.type,billEdited:false,billNote:'',merchant:tr?'':(r.merchant||'').trim(),proj:'',createdAt:Date.now()};
+    var nt0=(r.note||'').trim(),o={id:nextId++,name:nt0||(tr?'信用卡繳款':r.cat),cat:r.cat,sub:r.sub||'',wallet:tr?fr:w,date:r.date,amount:amt,currency:cur,twd:Math.round(r.twd),note:nt0,type:r.type,billEdited:false,billNote:'',merchant:(r.merchant||'').trim(),proj:r.proj||'',createdAt:Date.now()};
     if(tr){if(w&&w!==fr)o.toWallet=w;if(fr)lsSet('imp_from',fr);}
     expenses.unshift(o);b.add.push(o.id);n++;
-    var rk=impRk(r);if(rk)rules[rk]={c:r.cat,m:o.merchant};
+    var rk=impRk(r);if(rk)rules[rk]={c:r.cat,m:o.merchant,s:r.sub||''};
     if(o.merchant&&merchants.indexOf(o.merchant)<0){merchants.push(o.merchant);lsSet('merchants',merchants);}
   });
   if(!n&&!mg){showToast('⚠️ 沒有勾選任何項目');return;}
