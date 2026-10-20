@@ -727,7 +727,7 @@ input::placeholder{color:var(--t3);font-weight:400}
 <div id="imp-rawbox" style="display:none;margin-bottom:8px"><textarea id="imp-raw" rows="6" style="width:100%;font-size:11px" placeholder="貼上帳單文字（每行一筆明細）…"></textarea><div style="display:flex;gap:4px;margin-top:4px"><button class="btn bp bsm" id="imp-reparse">🔄 重新解析</button><button class="btn bg2 bsm" id="imp-rawcopy">📋 複製</button></div></div>
 <div id="imp-list"></div>
 <button class="btn bg2 bsm" id="imp-add" style="margin:4px 0 10px">＋ 新增一列</button>
-<div class="mbtns"><button class="btn bp bfw" id="imp-go">✅ 匯入勾選項目</button><button class="btn bg2" onclick="closeOv('ov-import')">取消</button></div></div></div>
+<div id="imp-bar" style="position:sticky;bottom:0;margin:6px -17px -32px;padding:10px 17px calc(14px + env(safe-area-inset-bottom,0px));background:var(--sf);border-top:1.5px solid var(--bd);box-shadow:0 -6px 14px rgba(0,0,0,.06);z-index:2"><div id="imp-bar-sum" style="font-size:12px;font-weight:800;margin-bottom:8px;line-height:1.6"></div><div class="mbtns" style="margin-top:0"><button class="btn bp bfw" id="imp-go">✅ 匯入勾選項目</button><button class="btn bg2" onclick="closeOv('ov-import')">取消</button></div></div></div></div>
 <div class="ov" id="ov-fx"><div class="modal"><div class="mh"></div><div class="mt" id="fx-mt">新增固定收支</div><div class="tabbar" id="fx-type-tabs"><div class="tab on" data-fxt="expense">固定支出</div><div class="tab" data-fxt="income">固定收入</div></div><div class="fg"><label class="fl">名稱</label><input type="text" id="fx-name" placeholder="例：Netflix 月費"/></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1.5;margin-bottom:0"><label class="fl">金額</label><input type="number" id="fx-amt" placeholder="390" inputmode="decimal"/></div><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">幣別</label><select id="fx-cur"></select></div></div><div class="fr" style="margin-bottom:10px"><div class="fg" style="flex:1;margin-bottom:0"><label class="fl">🔁 週期</label><select id="fx-period" onchange="updateFxPeriodUI()"><option value="monthly">每月</option><option value="yearly">每年</option><option value="weekly">每週</option><option value="daily">每天</option></select></div><div class="fg" id="fx-month-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📆 月份</label><select id="fx-month"></select></div><div class="fg" id="fx-day-wrap" style="flex:1;margin-bottom:0"><label class="fl">📅 幾號</label><select id="fx-day"><option value="0">月底</option></select></div><div class="fg" id="fx-wd-wrap" style="flex:1;margin-bottom:0;display:none"><label class="fl">📅 星期</label><select id="fx-wd"><option value="0">週日</option><option value="1">週一</option><option value="2">週二</option><option value="3">週三</option><option value="4">週四</option><option value="5">週五</option><option value="6">週六</option></select></div></div><div class="fg"><label class="fl">▶️ 開始日期 <span style="color:var(--t3);font-size:11px;font-weight:600">（這天起才會提醒入帳，不會補更早的）</span></label><input type="date" id="fx-since"/></div><div class="fg"><label class="fl">💳 錢包</label><select id="fx-wallet"></select></div><div class="fg"><label class="fl">分類</label><select id="fx-cat" onchange="updateFxSub()"></select></div><div class="fg"><label class="fl">子分類</label><select id="fx-sub"></select></div><div class="fg"><label class="fl">🏪 商家 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填）</span></label><input type="text" id="fx-merchant" list="fx-merchant-list" placeholder="例：Netflix、房東" autocomplete="off"/><datalist id="fx-merchant-list"></datalist></div><div class="fg"><label class="fl">📝 備註 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填，入帳時會帶入）</span></label><input type="text" id="fx-note" placeholder="例：家庭方案、含管理費" autocomplete="off"/></div><div class="mbtns"><button class="btn bp bfw" id="fx-save">✅ 儲存</button><button class="btn bg2" id="fx-cancel">取消</button></div><input type="hidden" id="fx-idx" value=""><input type="hidden" id="fx-tv" value="expense"></div></div>
 <div class="ov" id="ov-cur"><div class="modal"><div class="mh"></div><div class="mt" id="cur-mt">新增幣別</div><div class="fg"><label class="fl">代碼</label><input type="text" id="cu-code" placeholder="AUD" style="width:80px"/></div><div class="fg"><label class="fl">名稱</label><input type="text" id="cu-name" placeholder="澳幣"/></div><div class="fg"><label class="fl">對 TWD 匯率</label><input type="number" id="cu-rate" placeholder="21.5" step="0.0001"/></div><div class="mbtns"><button class="btn bp bfw" id="cur-save">✅ 儲存</button><button class="btn bg2" id="cur-cancel">取消</button></div><input type="hidden" id="cu-idx" value=""></div></div>
 <div class="cov" id="cov"><div class="cbox"><div class="cico" id="c-ico">⚠️</div><div class="ctit" id="c-tit">確定嗎？</div><div class="cmsg" id="c-msg">此操作無法復原。</div><div style="display:flex;gap:8px"><button class="btn bd2 bfw" id="c-ok">確認</button><button class="btn bg2 bfw" id="c-cancel">取消</button></div></div></div>
@@ -1113,14 +1113,14 @@ function impMerch(d){var m=String(d||'').replace(/^連加\*/,'').split(' ')[0].r
 function impDefFrom(w){var sv=lsGet('imp_from','');if(sv&&sv!==w)return sv;var a=wallets.filter(function(x){return x.active&&(x.icon+' '+x.name)!==w;}),b=a.filter(function(x){return /銀行|帳戶/.test(x.name);});return b.length?b[0].icon+' '+b[0].name:(a.length?a[0].icon+' '+a[0].name:'');}
 function impRawBox(show){var b=document.getElementById('imp-rawbox');if(show===undefined)show=b.style.display==='none';b.style.display=show?'block':'none';if(show)document.getElementById('imp-raw').value=impRaw;}
 function impGk(r){return (r.po==null?'m':(r.src||0))+'|'+(r.type==='transfer'?'T':(r.card||''));}
-var impMetas=[],impDropped=0,impExclOpen=false,impLockOpen=false,impTab='new',impGf={},IMP_EXCL_DEF=['55688','高鐵'];
+var impMetas=[],impDropped=0,impExclOpen=false,impLockOpen=false,impTab='new',impTy='all',impSumOpen=false,impGf={},IMP_EXCL_DEF=['55688','高鐵'];
 function impNk(x){return String(x||'').normalize('NFKC').toLowerCase().replace(/\s+/g,'');}
 function impExclHit(d,ex){var t=impNk(d);for(var i=0;i<ex.length;i++){var k=impNk(ex[i]);if(k&&t.indexOf(k)>=0)return ex[i];}return '';}
 // 帳單明細指紋：卡片尾號｜消費日｜類型｜金額｜說明＋「同檔內第幾次出現」→ 雙 32 位元雜湊（FNV-1a 與 djb2 變體），約 13 字元
 function impHash(t){var a=0x811c9dc5,b=5381,i,c;for(i=0;i<t.length;i++){c=t.charCodeAt(i);a^=c;a=Math.imul(a,16777619)>>>0;b=(Math.imul(b,33)+c)>>>0;}return 'i1-'+a.toString(36)+b.toString(36);}
 function impPaste(){impName='貼上文字';impRaw='';impShow([],'',[],0);}
 function impShow(rows,name,metas,dropped){
-  impMetas=metas||[];impDropped=dropped||0;impExclOpen=false;impLockOpen=false;impTab='new';
+  impMetas=metas||[];impDropped=dropped||0;impExclOpen=false;impLockOpen=false;impTab='new';impTy='all';impSumOpen=false;
   fillWalSel('imp-wallet');var w0=lsGet('imp_wallet','');if(w0)document.getElementById('imp-wallet').value=w0;
   var dw=document.getElementById('imp-wallet').value,used={},rules=lsGet('imp_rules',{}),excl=lsGet('imp_excl',IMP_EXCL_DEF);
   var doneK={};expenses.forEach(function(e){if(e.impKey&&!doneK[e.impKey])doneK[e.impKey]=e;});   // 已匯入過的帳單明細（記帳上的「帳單匯入碼」，跟著雲端同步）
@@ -1154,19 +1154,51 @@ function impSubs(catStr){for(var i=0;i<cats.length;i++){if(cats[i].icon+' '+cats
 function impProjOpts(sel){var now=todayStr(),h='<option value="">（無）</option>',f=false;for(var i=0;i<projects.length;i++){var p=projects[i];if(p.end>=now){var v=p.flag+' '+p.name;if(v===sel)f=true;h+='<option'+(v===sel?' selected':'')+'>'+esc(v)+'</option>';}}if(sel&&!f)h+='<option selected>'+esc(sel)+'</option>';return h;}
 function impCurOpts(sel){var h='',f=false;for(var i=0;i<currencies.length;i++){var c=currencies[i];if(c.code===sel)f=true;h+='<option value="'+esc(c.code)+'"'+(c.code===sel?' selected':'')+'>'+esc(c.code)+' '+esc(c.name)+'</option>';}if(sel&&!f)h+='<option value="'+esc(sel)+'" selected>'+esc(sel)+'</option>';return h;}
 // 欄位與順序比照「新增記帳」：類型 → 分類／子分類 → 商家 → 日期 → 金額／幣別 → 錢包／專案 → 轉入錢包(轉帳) → 備註
+// 帳單那筆與「你記的」那筆是否完全相同（日期、金額、錢包都一致）
+function impSame(r,old){return !!old&&r.date===old.date&&Math.round(Number(r.twd)||0)===Math.round(Number(old.twd)||0)&&(r.type==='transfer'||!r.wallet||!old.wallet||r.wallet===old.wallet);}
+// 「對到已記的」左右對照：左＝帳單，右＝你記的，有差異的格子標紅
+function impCmpHtml(r,i,old){
+  var acts=[['merge','沿用我記的'],['replace','改用帳單'],['both','兩筆都留'],['skip','都不動']],tr=r.type==='transfer';
+  var ot=Math.round(Number(old.twd)||0),nt=Math.round(Number(r.twd)||0),same=impSame(r,old),decided=!!(r.ok||same);
+  var dd=r.date!==old.date,da=ot!==nt,dw=!tr&&!!r.wallet&&!!old.wallet&&r.wallet!==old.wallet;
+  var cell=function(v,bad){return '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:6px;'+(bad?'background:rgba(192,57,43,.14);color:var(--rd);font-weight:800':'')+'">'+v+'</div>';};
+  var lab=function(v){return '<div style="color:var(--t3);padding:3px 0">'+v+'</div>';};
+  var hint={merge:(tr?'保留你記的轉帳，補上轉入錢包':'保留你的名稱／分類／備註，只把金額與錢包校正成帳單的'+(da?'（金額不同，會標「帳單更新」）':'')+(r.wallet&&old.wallet!==r.wallet?'；錢包改為 '+r.wallet:'')),
+    replace:'刪掉你記的那筆，改存帳單這列（可先展開修改日期、金額、名稱、分類）',both:'兩筆都會存在（可能重複）',skip:'這列不匯入，你記的維持原樣'}[r.act]||'';
+  var h='<div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--al)">'
+    +'<div style="font-size:11.5px;font-weight:800">'+(same?'✓ 與你記的完全相同':'⚠️ 對到你已記的，但有差異（紅色處）')+(decided?'':' <span style="color:#e08a00">● 待判定</span>')+'</div>';
+  if(!same){
+    h+='<div style="display:grid;grid-template-columns:34px 1fr 1fr;gap:2px 6px;align-items:center;font-size:11.5px;font-weight:700;margin-top:6px"><div></div><div style="color:var(--t3);padding:0 6px">帳單</div><div style="color:var(--t3);padding:0 6px">你記的</div>'
+      +lab('日期')+cell(esc(r.date),dd)+cell(esc(old.date),dd)
+      +lab('金額')+cell('NT$'+nt.toLocaleString(),da)+cell('NT$'+ot.toLocaleString(),da)
+      +lab('錢包')+cell(esc(r.wallet||'—'),dw)+cell(esc(old.wallet||'—'),dw)
+      +lab('名稱')+cell(esc(r.desc||'—'),false)+cell(esc(old.name||old.note||old.cat||'—'),false)+'</div>';
+  }else{
+    h+='<div style="font-size:11px;font-weight:700;color:var(--t2);margin-top:3px">'+esc(old.date)+' · '+esc(old.name||old.note||old.cat)+' · '+esc(old.wallet||'')+' · NT$'+ot.toLocaleString()+'</div>';
+  }
+  h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">'+acts.map(function(x){return '<button class="btn bsm '+(decided&&r.act===x[0]?'bp':'bg2')+'" data-iact="'+i+'|'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>'
+    +'<div style="font-size:11px;font-weight:600;color:var(--t2);margin-top:4px;line-height:1.6">'+(decided?esc(hint):'還沒決定，匯入時預設為「沿用我記的」')+'</div></div>';
+  return h;
+}
+// 單列：預設只顯示一行（日期、說明、金額），點一下展開才出現完整欄位
 function impRowHtml(r,i,col,old){
-  var acts=[['merge','沿用我記的'],['replace','改用帳單'],['both','兩筆都留'],['skip','都不動']];
-  var tr=r.type==='transfer',fo=!!(r.cur&&r.cur!=='TWD'),h='';
-  var tint=r.type==='income'?',inset 0 0 0 999px rgba(45,122,72,.20)':(tr?',inset 0 0 0 999px rgba(26,80,160,.14)':',inset 0 0 0 999px rgba(192,57,43,.14)');
+  var tr=r.type==='transfer',fo=!!(r.cur&&r.cur!=='TWD'),h='',open=!!r.open;
   var at=' data-ii="'+i+'" data-f=',G=function(fl,lbl,inner){return '<div class="fg" style="flex:'+fl+';min-width:0;margin-bottom:0"><label class="fl">'+lbl+'</label>'+inner+'</div>';};
   var catOpts=impCatOpts(r.type).map(function(c){var v=c.icon+' '+c.name;return '<option'+(v===r.cat?' selected':'')+'>'+esc(v)+'</option>';}).join('');
   if(catOpts.indexOf('selected')<0)catOpts='<option selected>'+esc(r.cat)+'</option>'+catOpts;
   var subOpts='<option value="">（無子分類）</option>'+impSubs(r.cat).map(function(x){return '<option'+(x===r.sub?' selected':'')+'>'+esc(x)+'</option>';}).join('');
   var tabs=[['expense','💸 支出'],['income','💚 收入'],['transfer','↔️ 轉帳']].map(function(t){return '<div class="tab'+(r.type===t[0]?' on':'')+'" data-ii="'+i+'" data-itype="'+t[0]+'">'+t[1]+'</div>';}).join('');
   var badge=tr?'🏦 繳款／還款':'💳 '+(r.card?'尾號 '+esc(r.card)+(r.mapped?' ✓':' 未對應'):'沒讀到尾號');
-  var M='margin-bottom:8px',pills=impPill(IMP_TY[r.type]||IMP_TY.expense)+impPill(IMP_ST[impStatusOf(r,old)]||IMP_ST['new']);
-  h+='<div class="card" style="padding:10px;margin-bottom:12px;border-left:6px solid '+col+';box-shadow:var(--sh)'+tint+(r.on?'':';opacity:.6')+'">'
-    +'<div style="display:flex;gap:8px;align-items:center;'+M+'"><input type="checkbox" aria-label="匯入這筆"'+(r.on?' checked':'')+at+'"on" style="width:20px;height:20px;flex:none"/>'+pills+'<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:800;color:'+(r.mapped||tr?'var(--gr)':'var(--t2)')+'">'+badge+'</span><button aria-label="刪除這列" class="bico" data-idel="'+i+'">🗑</button></div>'
+  var M='margin-bottom:8px',st0=impStatusOf(r,old),pills=impPill(IMP_TY[r.type]||IMP_TY.expense)+(st0==='new'?'':impPill(IMP_ST[st0]||IMP_ST['new']));
+  var amt=Math.round(Number(r.twd)||0).toLocaleString(),sign=r.type==='income'?'+':(r.type==='expense'?'−':''),ac=r.type==='income'?'var(--gr)':(r.type==='expense'?'var(--rd)':'#1a50a0');
+  var nm=r.merchant||r.desc||'（無說明）',dt=String(r.date||'').slice(5).replace('-','/');
+  h+='<div class="card" style="padding:10px;margin-bottom:10px;border-left:6px solid '+col+';box-shadow:var(--sh)'+(r.on?'':';opacity:.6')+'">'
+    +'<div style="display:flex;gap:10px;align-items:center"><input type="checkbox" aria-label="匯入這筆"'+(r.on?' checked':'')+at+'"on" style="width:22px;height:22px;flex:none"/>'
+    +'<div data-iopen="'+i+'" style="flex:1;min-width:0;cursor:pointer"><div style="display:flex;gap:8px;align-items:baseline"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:800">'+esc(dt)+' '+esc(nm)+'</span><span style="flex:none;font-size:14.5px;font-weight:900;color:'+ac+'">'+sign+amt+'</span><span style="flex:none;color:var(--t3);font-size:12px">'+(open?'▾':'▸')+'</span></div>'
+    +'<div style="display:flex;gap:6px;align-items:center;margin-top:4px;min-width:0">'+pills+'<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700;color:var(--t2)">'+badge+(r.cat?' · '+esc(r.cat):'')+(fo?' · '+esc(r.cur)+' '+esc(r.orig):'')+(r.flag?' · ⚠️':'')+(r.excl?' · 🚫排除名單':'')+'</span></div></div></div>';
+  if(old)h+=impCmpHtml(r,i,old);
+  if(open){
+    h+='<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd)">'
     +'<div class="tabbar" style="margin-bottom:8px">'+tabs+'</div>'
     +'<div class="fr" style="'+M+'">'+G(1,'🏷️ 分類','<select'+at+'"cat">'+catOpts+'</select>')+G(1,'📂 子分類','<select'+at+'"sub">'+subOpts+'</select>')+'</div>'
     +'<div class="fg" style="'+M+'"><label class="fl">🏪 商家</label><input type="text" list="imp-mlist" value="'+esc(r.merchant||'')+'"'+at+'"merchant" placeholder="輸入或搜尋商家…" autocomplete="off"/></div>'
@@ -1177,24 +1209,20 @@ function impRowHtml(r,i,col,old){
     +(tr?'<div class="fg" style="'+M+'"><label class="fl">👛 轉入錢包 <span style="color:var(--t3);font-size:11px;font-weight:600">（選填，只是轉帳可不指定）</span></label><select'+at+'"wallet">'+impWalOpts(r.wallet)+'</select></div>':'')
     +'<div class="fg" style="margin-bottom:0"><label class="fl">📝 備註</label><textarea rows="1" style="resize:vertical"'+at+'"note" placeholder="記點什麼吧…">'+esc(r.note||'')+'</textarea></div>'
     +(r.flag?'<div style="font-size:11px;color:var(--am);font-weight:700;margin-top:6px">⚠️ '+esc(r.flag)+'</div>':'')
-    +(r.excl?'<div style="font-size:11px;color:var(--t3);font-weight:700;margin-top:6px">🚫 符合排除名單「'+esc(r.excl)+'」，已取消勾選</div>':'');
-  if(old){
-    var ot=Math.round(Number(old.twd)||0),nt=Math.round(r.twd);
-    var hint={merge:(tr?'保留你記的轉帳，補上轉入錢包':'保留你的名稱／分類／備註，只把金額與錢包校正成帳單的'+(ot!==nt?'（金額不同，會標「帳單更新」）':'')+(r.wallet&&old.wallet!==r.wallet?'；錢包改為 '+r.wallet:'')),
-      replace:'刪掉你記的那筆，改存上面這列（可先改日期、金額、名稱、分類）',both:'兩筆都會存在（可能重複）',skip:'這列不匯入，你記的維持原樣'}[r.act]||'';
-    h+='<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--al);font-size:11px;font-weight:700;line-height:1.6">🔎 對到你已記的：'+esc(old.date)+' · '+esc(old.name||old.note||old.cat)+' · '+esc(old.wallet||'')+' · '+(old.currency!=='TWD'?esc(old.currency)+' '+esc(old.amount)+' ≈ ':'')+'NT$'+ot.toLocaleString()
-      +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">'+acts.map(function(x){return '<button class="btn bsm '+(r.act===x[0]?'bp':'bg2')+'" data-iact="'+i+'|'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div><div style="font-weight:600;color:var(--t2);margin-top:3px">'+esc(hint)+'</div></div>';
+    +(r.excl?'<div style="font-size:11px;color:var(--t3);font-weight:700;margin-top:6px">🚫 符合排除名單「'+esc(r.excl)+'」，已取消勾選</div>':'')
+    +'<div style="text-align:right;margin-top:8px"><button class="btn bg2 bsm" data-idel="'+i+'">🗑 刪除這列</button></div></div>';
   }
   h+='</div>';
   return h;
 }
+
 function impReconHtml(){
   var h='';
   impMetas.forEach(function(m){   // 整份帳單／部分明細已匯入過的提醒
     if(!(m.tot>0&&m.lk>0))return;
     var nm=esc(String(m.name||'').replace(/\.pdf$/i,''));
-    h+=m.lk===m.tot?'<div style="color:var(--rd)">🔒 '+nm+'：<b>整份帳單已匯入過</b>（'+m.tot+' 筆明細都已在記帳裡），已全部鎖定，不會重複匯入</div>'
-      :'<div style="color:var(--am)">⚠️ '+nm+'：這份帳單<b>已匯入過一部分</b>：'+m.lk+' 筆明細已匯入過（已鎖定、不會重複匯入），另外 '+(m.tot-m.lk)+' 筆還沒匯入</div>';
+    h+=m.lk===m.tot?'<div style="margin:6px 0;padding:9px 11px;border-radius:10px;background:rgba(192,57,43,.12);border:1.5px solid var(--rd);color:var(--rd);font-weight:800">🔒 '+nm+'：<b>整份帳單已匯入過</b>（'+m.tot+' 筆明細都已在記帳裡），已全部鎖定，不會重複匯入</div>'
+      :'<div style="margin:6px 0;padding:9px 11px;border-radius:10px;background:var(--al);border:1.5px solid var(--am);color:var(--am);font-weight:800">⚠️ '+nm+'：這份帳單<b>已匯入過一部分</b>：'+m.lk+' 筆明細已匯入過（已鎖定、不會重複匯入），另外 '+(m.tot-m.lk)+' 筆還沒匯入</div>';
   });
   impMetas.forEach(function(m){
     if(m.target==null)return;
@@ -1219,7 +1247,7 @@ function impLockHtml(r,o){
     +'<div style="font-size:11px;font-weight:700;color:var(--t2);margin-top:4px;line-height:1.6">已記為：'+esc(o.date)+' · '+esc(o.name||o.note||o.cat)+' · '+esc(o.wallet||'')+' · NT$'+Math.round(Number(o.twd)||0).toLocaleString()+'。這筆帳單明細已匯入過，不會重複匯入（若想重新匯入，請先刪除那筆記帳）</div></div>';
 }
 function impRender(){
-  var h='',ex=0,inc=0,n=0,dn=0,xn=0,ln=0,cs={},ord=[],xord=[],lord=[],nn=0,nm=0,gt={},gs={},st={},cc={},ccn=0;
+  var h='',ex=0,inc=0,n=0,dn=0,xn=0,ln=0,cs={},ord=[],xord=[],lord=[],nn=0,nm=0,nd=0,md=0,ms=0,tc={all:0},gt={},gs={},st={},cc={},ccn=0;
   var gkey=impGk,TY=['expense','income','transfer'];
   var tRank=function(r){var x=TY.indexOf(r.type);return x<0?3:x;};
   impRows.forEach(function(r,i){
@@ -1233,19 +1261,23 @@ function impRender(){
     if(r.on){n++;if(r.type==='income')inc+=r.twd;else if(r.type==='expense')ex+=r.twd;if(old)dn++;}
     if(r.excl)xn++;
     if(r.excl){if(impTab==='new')xord.push(i);return;}
-    if(old)nm++;else nn++;
+    if(old){nm++;if(r.on&&!r.ok&&!impSame(r,old))nd++;}else nn++;   // nd＝對到已記的、還沒判定的筆數
     if(impTab==='lock'||(impTab==='match')!==!!old)return;   // 分頁：新增／對到已記的／已匯入過，各自只列自己的項目
+    tc.all++;tc[r.type]=(tc[r.type]||0)+1;if(old){if(impSame(r,old))ms++;else md++;}
+    if(impTy!=='all'&&r.type!==impTy)return;   // 全部／支出／收入 切換
     ord.push(i);var k=gkey(r),g=gt[k]||(gt[k]={n:0,ex:0,inc:0,tr:0});g.n++;if(r.type==='transfer')g.tr+=r.twd;if(r.type==='income')g.inc+=r.twd;else if(r.type==='expense')g.ex+=r.twd;
     var sk=k+'#'+tRank(r),u=gs[sk]||(gs[sk]={n:0,sum:0});u.n++;u.sum+=Number(r.twd)||0;
   });
   // 顯示順序：來源檔 → 卡片（照帳單出現的先後）→ 支出／收入／轉帳 → 新增／對到已記的 → 日期
   ord.sort(function(a,b){
     var x=impRows[a],y=impRows[b],kx=gkey(x),ky=gkey(y),gx=impGf[kx]===undefined?1e9:impGf[kx],gy=impGf[ky]===undefined?1e9:impGf[ky];
-    return ((x.src||0)-(y.src||0))||(gx-gy)||(kx<ky?-1:kx>ky?1:0)||(tRank(x)-tRank(y))||((x.dup?1:0)-(y.dup?1:0))||(x.date<y.date?-1:x.date>y.date?1:0)||((x.po||0)-(y.po||0))||(a-b);
+    return ((x.src||0)-(y.src||0))||(gx-gy)||(kx<ky?-1:kx>ky?1:0)||(tRank(x)-tRank(y))||((x.dup&&impSame(x,impFind(x.dup))?1:0)-(y.dup&&impSame(y,impFind(y.dup))?1:0))||(x.date<y.date?-1:x.date>y.date?1:0)||((x.po||0)-(y.po||0))||(a-b);
   });
   var colOf=function(r){var c=r.card||'';if(cc[c]===undefined)cc[c]=ccn++;return IMP_COL[cc[c]%IMP_COL.length];};
-  var tabs='<div class="tabbar" style="margin-bottom:8px">'+[['new','🆕 新增',nn],['match','🔗 對到已記的',nm]].concat(ln?[['lock','🔒 已匯入過',ln]]:[]).map(function(t){return '<div class="tab'+(impTab===t[0]?' on':'')+'" data-imptab="'+t[0]+'">'+t[1]+' '+t[2]+'</div>';}).join('')+'</div>';
+  var tabs='<div class="tabbar" style="margin-bottom:8px">'+[['new','🆕 新增',nn,''],['match','🔗 對到已記的',nm,nd?' <span style="color:#e08a00">●</span>':''],['lock','🔒 已匯入過',ln,'']].filter(function(t){return t[0]!=='lock'||ln;}).map(function(t){return '<div class="tab'+(impTab===t[0]?' on':'')+'" data-imptab="'+t[0]+'"'+(t[0]==='lock'&&impTab!=='lock'?' style="color:var(--t3)"':'')+'>'+t[1]+' '+t[2]+t[3]+'</div>';}).join('')+'</div>';
   h+=tabs;
+  if(impTab!=='lock'&&tc.all)h+='<div style="display:flex;gap:6px;margin-bottom:10px">'+[['all','全部',tc.all],['expense','💸 支出',tc.expense||0],['income','💚 收入',tc.income||0]].map(function(t){return '<button class="btn bsm '+(impTy===t[0]?'bp':'bg2')+'" data-impty="'+t[0]+'">'+t[1]+' '+t[2]+'</button>';}).join('')+'</div>';
+  if(impTab==='match'&&(md||ms))h+='<div style="margin:0 0 10px;padding:8px 10px;border-radius:10px;background:var(--al);font-size:12px;font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>⚠️ 有差異 '+md+' 筆（請逐筆判斷）｜✓ 完全相同 '+ms+' 筆</span>'+(ms?'<button class="btn bg2 bsm" data-isame="1" style="margin-left:auto">✓ 完全相同的全部沿用</button>':'')+'</div>';
   var prev='',prevS='';
   ord.forEach(function(i){
     var r=impRows[i],k=gkey(r),col=colOf(r),old=r.dup?impFind(r.dup):null;
@@ -1258,7 +1290,7 @@ function impRender(){
     var sk=k+'#'+tRank(r);
     if(sk!==prevS){   // 卡片內再分區：支出／收入／轉帳 × 新增／對到你已記的
       prevS=sk;var u=gs[sk];
-      h+='<div style="margin:12px 0 6px;padding:6px 10px;border-radius:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:800;color:#fff;background:'+(IMP_TC[r.type]||'#c0392b')+'">'+(IMP_TY[r.type]||IMP_TY.expense)[0]+'<span style="font-weight:700;opacity:.95">'+(old?'逐筆選：沿用我記的／改用帳單／兩筆都留／都不動':'')+'</span><span style="margin-left:auto">'+u.n+' 筆｜NT$'+Math.round(u.sum).toLocaleString()+'</span></div>';
+      h+='<div style="margin:12px 0 6px;padding:6px 10px;border-radius:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:800;color:#fff;background:'+(IMP_TC[r.type]||'#c0392b')+'">'+(IMP_TY[r.type]||IMP_TY.expense)[0]+'<span style="font-weight:700;opacity:.95">'+''+'</span><span style="margin-left:auto">'+u.n+' 筆｜NT$'+Math.round(u.sum).toLocaleString()+'</span></div>';
     }
     h+=impRowHtml(r,i,IMP_TC[r.type]||col,old);
   });
@@ -1282,9 +1314,14 @@ function impRender(){
     sh+='<div style="display:flex;gap:4px 10px;flex-wrap:wrap;align-items:baseline;margin-top:3px"><span style="font-weight:800;color:var(--tx)">'+SL[s]+'</span>'
       +TY.map(function(t){var q=b[t];return q?'<span>'+TL[t]+' '+q.n+' 筆 NT$'+Math.round(q.sum).toLocaleString()+'</span>':'';}).join('')+'</div>';
   });
-  document.getElementById('imp-sum').innerHTML='<div>共 '+impRows.length+' 列，勾選 '+n+' 筆｜支出 NT$'+Math.round(ex).toLocaleString()+(inc?'｜收入 NT$'+Math.round(inc).toLocaleString():'')+'（可對照帳單金額）'+(dn?'｜其中 '+dn+' 筆對到已記的帳':'')+(ck.length?'｜讀到卡片尾號 '+esc(ck.join('、')):'｜沒讀到卡片尾號')+'</div>'
-    +(sh?'<div style="margin-top:6px;padding:7px 10px;border-radius:10px;background:var(--s2);font-size:11.5px;line-height:1.7">'+sh+'</div>':'');
+  document.getElementById('imp-sum').innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>共 '+impRows.length+' 列'+(ck.length?'｜讀到卡片尾號 '+esc(ck.join('、')):'｜沒讀到卡片尾號')+'</span><button class="btn bg2 bsm" data-isum="1" style="margin-left:auto">📊 分項統計 '+(impSumOpen?'▾':'▸')+'</button></div>'
+    +(impSumOpen&&sh?'<div style="margin-top:6px;padding:7px 10px;border-radius:10px;background:var(--s2);font-size:11.5px;line-height:1.7">'+sh+'</div>':'');
+  // 底部固定列：勾選合計＋匯入按鈕（不用捲到最底）
+  var allDone=impMetas.length>0&&impMetas.every(function(m){return m.tot>0&&m.lk===m.tot;}),go=document.getElementById('imp-go');
+  document.getElementById('imp-bar-sum').innerHTML=allDone?'<span style="color:var(--rd)">🔒 這份帳單的明細都已匯入過，沒有可匯入的項目</span>':'勾選 '+n+' 筆｜<span style="color:var(--rd)">💸 支出 NT$'+Math.round(ex).toLocaleString()+'</span>｜<span style="color:var(--gr)">💚 收入 NT$'+Math.round(inc).toLocaleString()+'</span>'+(nd?'｜<span style="color:#e08a00">⚠️ '+nd+' 筆待判定</span>':'')+(ln?'｜🔒 '+ln+' 筆已鎖定':'');
+  go.disabled=allDone||n===0;go.textContent=allDone?'🔒 已匯入過':(n?'✅ 匯入 '+n+' 筆':'沒有勾選項目');
 }
+document.getElementById('imp-sum').addEventListener('click',function(e){if(e.target.closest('[data-isum]')){impSumOpen=!impSumOpen;impRender();}});
 function impRevert(b){
   var ids={};b.add.forEach(function(i){ids[i]=1;});
   expenses=expenses.filter(function(e){return !ids[e.id];});
@@ -1456,10 +1493,10 @@ document.getElementById('imp-list').addEventListener('change',function(e){
   if(f==='wallet')r.walAuto=true;
   impRender();
 });
-document.getElementById('imp-list').addEventListener('click',function(e){var tbb=e.target.closest('[data-imptab]');if(tbb){impTab=tbb.dataset.imptab;impRender();return;}if(e.target.closest('[data-ilock]')){impLockOpen=!impLockOpen;impRender();return;}if(e.target.closest('[data-iexcl]')){impExclOpen=!impExclOpen;impRender();return;}var tb=e.target.closest('[data-itype]');if(tb){var tr0=impRows[+tb.dataset.ii];if(tr0.type!==tb.dataset.itype){tr0.type=tb.dataset.itype;tr0.cat=impDefCat(tr0.type);tr0.sub='';tr0.dup=null;if(tr0.type==='transfer'&&!tr0.from)tr0.from=impDefFrom(tr0.wallet);impRender();}return;}var ac=e.target.closest('[data-iact]');if(ac){var pp=ac.dataset.iact.split('|');impRows[+pp[0]].act=pp[1];impRender();return;}var b=e.target.closest('[data-idel]');if(b){impRows.splice(+b.dataset.idel,1);impRender();}});
+document.getElementById('imp-list').addEventListener('click',function(e){var tbb=e.target.closest('[data-imptab]');if(tbb){impTab=tbb.dataset.imptab;impRender();return;}var tyb=e.target.closest('[data-impty]');if(tyb){impTy=tyb.dataset.impty;impRender();return;}var opb=e.target.closest('[data-iopen]');if(opb){var orr=impRows[+opb.dataset.iopen];orr.open=!orr.open;impRender();return;}if(e.target.closest('[data-isame]')){impRows.forEach(function(r){var o=r.dup&&impFind(r.dup);if(o&&impSame(r,o)){r.act='merge';r.ok=true;}});impRender();return;}if(e.target.closest('[data-ilock]')){impLockOpen=!impLockOpen;impRender();return;}if(e.target.closest('[data-iexcl]')){impExclOpen=!impExclOpen;impRender();return;}var tb=e.target.closest('[data-itype]');if(tb){var tr0=impRows[+tb.dataset.ii];if(tr0.type!==tb.dataset.itype){tr0.type=tb.dataset.itype;tr0.cat=impDefCat(tr0.type);tr0.sub='';tr0.dup=null;if(tr0.type==='transfer'&&!tr0.from)tr0.from=impDefFrom(tr0.wallet);impRender();}return;}var ac=e.target.closest('[data-iact]');if(ac){var pp=ac.dataset.iact.split('|');var rr=impRows[+pp[0]];rr.act=pp[1];rr.ok=true;impRender();return;}var b=e.target.closest('[data-idel]');if(b){impRows.splice(+b.dataset.idel,1);impRender();}});
 document.getElementById('imp-tools').addEventListener('click',function(e){
   var b=e.target.closest('[data-ib]');if(!b)return;var k=b.dataset.ib;
-  if(k==='merge'||k==='skip')impRows.forEach(function(r){if(r.dup&&impFind(r.dup))r.act=k;});
+  if(k==='merge'||k==='skip')impRows.forEach(function(r){if(r.dup&&impFind(r.dup)){r.act=k;r.ok=true;}});
   else if(k==='tog'){var any=impRows.some(function(r){return !r.excl&&!r.lock&&!r.on;});impRows.forEach(function(r){if(!r.excl&&!r.lock)r.on=any;});}
   else if(k==='flt')impFlt=impFlt===''?'dup':impFlt==='dup'?'new':'';
   else if(k==='raw'){impRawBox();return;}
@@ -1469,7 +1506,7 @@ document.getElementById('imp-reparse').addEventListener('click',function(){impRa
 document.getElementById('imp-rawcopy').addEventListener('click',function(){var v=document.getElementById('imp-raw').value;if(navigator.clipboard)navigator.clipboard.writeText(v).then(function(){showToast('📋 已複製');});});
 document.getElementById('imp-hist').addEventListener('click',function(e){var u=e.target.closest('[data-iundo]');if(!u)return;var b=lsGet('imp_batches',[])[+u.dataset.iundo];if(!b)return;showConfirm('↩️','撤銷這次匯入？','會刪除這次新增的 '+b.add.length+' 筆，並還原校正／取代的記錄；新增的那幾筆之後若有改過也會一併刪除。',function(){impRevert(b);});});
 document.getElementById('imp-wallet').addEventListener('change',function(){var w=this.value;impRows.forEach(function(r){if(!r.walAuto)r.wallet=w;});impRender();});
-document.getElementById('imp-add').addEventListener('click',function(){impRows.push({on:true,date:todayStr(),desc:'',twd:0,type:'expense',cat:impDefCat('expense'),flag:'',card:'',wallet:document.getElementById('imp-wallet').value,walAuto:false,mapped:false,dup:null,act:'merge',merchant:'',from:'',sub:'',proj:'',note:''});impRender();});
+document.getElementById('imp-add').addEventListener('click',function(){impRows.push({on:true,date:todayStr(),desc:'',twd:0,type:'expense',cat:impDefCat('expense'),flag:'',card:'',wallet:document.getElementById('imp-wallet').value,walAuto:false,mapped:false,dup:null,act:'merge',merchant:'',from:'',sub:'',proj:'',note:'',open:true});impRender();});
 document.getElementById('imp-go').addEventListener('click',function(){
   var doneK={},bk=0,dw=document.getElementById('imp-wallet').value,n=0,mg=0,rp=0,learn={},rules=lsGet('imp_rules',{}),b={id:Date.now(),ts:Date.now(),name:impName||'貼上文字',add:[],mod:[],del:[]};
   expenses.forEach(function(e){if(e.impKey)doneK[e.impKey]=1;});
