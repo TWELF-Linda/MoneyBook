@@ -2290,10 +2290,9 @@ function amtAttach(id){
   var el=document.getElementById(id);if(!el)return;
   var host=el.closest('.amt-box')||el,box=document.createElement('div');
   box.className='amt-x';
-  box.innerHTML='<div class="amt-hint" role="status" aria-live="polite"></div><div class="amt-ops" hidden>'
-    +[['＋','+','加'],['－','-','減'],['×','×','乘'],['÷','÷','除'],['(','(','左括號'],[')',')','右括號'],['＝','=','算出結果']].map(function(o){return '<button type="button" class="amt-op'+(o[1]==='='?' eq':'')+'" data-o="'+o[1]+'" aria-label="'+o[2]+'">'+o[0]+'</button>';}).join('')+'</div>';
+  box.innerHTML='<div class="amt-hint" role="status" aria-live="polite"></div>';
   host.parentNode.insertBefore(box,host.nextSibling);
-  var hint=box.querySelector('.amt-hint'),ops=box.querySelector('.amt-ops');
+  var hint=box.querySelector('.amt-hint'),ops=document.createElement('div');   // 運算符號按鈕列已移除：鍵盤直接輸入算式仍可使用（ops 只是空殼，避免改動下方事件程式）
   function plain(){return /^[\d.,，\s]*$/.test(String(el.value).normalize('NFKC'));}
   function upd(){
     var v=el.value,r=amtParse(v);hint.className='amt-hint';
