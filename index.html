@@ -137,13 +137,13 @@ input::placeholder{color:var(--t3);font-weight:400}
 /* EXP ITEM */
 .ei{background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--rs);padding:10px 12px;display:flex;align-items:center;gap:9px;margin-bottom:6px;cursor:pointer;transition:all .15s}
 .ei:hover{border-color:var(--a2);background:var(--s2);transform:translateX(2px)}
-/* ── 右滑顯示 編輯／複製／刪除 ── */
+/* ── 左滑顯示 編輯／複製／刪除 ── */
 .eiw{position:relative;margin-bottom:6px;border-radius:var(--rs);overflow:hidden;-webkit-user-select:none;user-select:none}
 .eiw>.ei{margin-bottom:0;position:relative;z-index:1;touch-action:pan-y;transition:transform .22s ease,border-color .15s,background .15s}
 .eiw>.ei:hover{transform:none}
-.eiw.open>.ei{transform:translateX(168px)}
+.eiw.open>.ei{transform:translateX(-168px)}
 .eiw.drag>.ei{transition:none}
-.eact{position:absolute;left:0;top:0;bottom:0;width:168px;display:flex;visibility:hidden;transition:visibility 0s .22s}
+.eact{position:absolute;right:0;top:0;bottom:0;width:168px;display:flex;visibility:hidden;transition:visibility 0s .22s}
 .eiw.open .eact,.eiw.drag .eact{visibility:visible;transition-delay:0s}
 .eact button{flex:1;border:0;margin:0;padding:0;color:#fff;font-family:inherit;font-size:20px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;-webkit-tap-highlight-color:transparent}
 .eact button span{font-size:10px;letter-spacing:.5px}
@@ -2953,7 +2953,7 @@ function expHTML(e,noDate){
     +'<button type="button" class="a-del" data-act="del" data-eid="'+eid+'" aria-label="刪除這筆記帳">🗑️<span>刪除</span></button>';
   return '<div class="eiw"><div class="eact">'+actH+'</div><div class="ei" role="button" tabindex="0" data-eid="'+eid+'"><div class="eico" style="'+icoStyle+'">'+ico+'</div><div class="ein"><div class="enm">'+dispName+billTag+'</div><div class="emt">'+[(noDate?'':esc(e.date||'')),wallet,(e.sub?esc(e.sub):'')].filter(Boolean).join(' · ')+'</div></div><div class="eam"><div class="eor '+(isIn?'in':'ex')+'">'+(isIn?'+':e.type==='transfer'?'↔ ':'-')+amtStr+'</div>'+twdLine+'</div></div></div>';
 }
-// ── 記錄列：點一下看明細；右滑出現 編輯／複製／刪除 ───────────────
+// ── 記錄列：點一下看明細；左滑出現 編輯／複製／刪除 ───────────────
 var _swipeBlockUntil=0,_SWIPE_W=168;
 function closeSwipeRows(except){document.querySelectorAll('.eiw.open').forEach(function(w){if(w!==except)w.classList.remove('open');});}
 ['touchstart','mousedown'].forEach(function(t){document.addEventListener(t,function(ev){if(!ev.target.closest||!ev.target.closest('.eiw'))closeSwipeRows(null);},true);});
@@ -2968,8 +2968,8 @@ function bindExpClicks(container){
     });
     ei.addEventListener('keydown',function(ev){
       if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();viewExp(parseInt(ei.dataset.eid));}
-      else if(ev.key==='ArrowRight'){ev.preventDefault();closeSwipeRows(w);w.classList.add('open');}
-      else if(ev.key==='ArrowLeft'||ev.key==='Escape'){w.classList.remove('open');}
+      else if(ev.key==='ArrowLeft'){ev.preventDefault();closeSwipeRows(w);w.classList.add('open');}
+      else if(ev.key==='ArrowRight'||ev.key==='Escape'){w.classList.remove('open');}
     });
     function startSwipe(x,y){
       tracking=true;dragging=false;sx=x;sy=y;
@@ -2985,8 +2985,8 @@ function bindExpClicks(container){
         else return;
       }
       if(ev&&ev.cancelable)ev.preventDefault();
-      off=Math.max(0,Math.min(_SWIPE_W+24,so+dx));
-      ei.style.transform='translateX('+off+'px)';
+      off=Math.max(0,Math.min(_SWIPE_W+24,so-dx));
+      ei.style.transform='translateX('+(-off)+'px)';
     }
     function endSwipe(){
       if(!tracking)return;
