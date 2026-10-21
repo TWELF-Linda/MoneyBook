@@ -1220,6 +1220,7 @@ function impMatch(r,used){
 var impName='',impRaw='',impFlt='';
 function impKey(d){var k=String(d||'').replace(/[\s\d*\-_.()（）]/g,'').toLowerCase().slice(0,6);return k.length>=2?k:'';}
 function impRk(r){var k=impKey(r.desc);return k&&r.type!=='transfer'?(r.type==='income'?'i:':'e:')+k:'';}
+function impXk(r){var k=String(r.desc||'').normalize('NFKC').replace(/^連加\*/,'').replace(/\s+/g,'').replace(/\d+$/,'').toLowerCase();return k.length>=2&&r.type!=='transfer'?'x:'+(r.type==='income'?'i:':'e:')+k.slice(0,40):'';}   // 完整說明（去掉結尾數字）為鍵：同一家店精準套用；找不到再退回前 6 字的舊規則
 function impMerch(d){var m=String(d||'').replace(/^連加\*/,'').split(' ')[0].replace(/[\d*]+$/,'').slice(0,14);return m.length>=2?m:'';}
 function impDefFrom(w){var sv=lsGet('imp_from','');if(sv&&sv!==w)return sv;var a=wallets.filter(function(x){return x.active&&(x.icon+' '+x.name)!==w;}),b=a.filter(function(x){return /銀行|帳戶/.test(x.name);});return b.length?b[0].icon+' '+b[0].name:(a.length?a[0].icon+' '+a[0].name:'');}
 function impRawBox(show){var b=document.getElementById('imp-rawbox');if(show===undefined)show=b.style.display==='none';b.style.display=show?'block':'none';if(show)document.getElementById('imp-raw').value=impRaw;}
@@ -1237,10 +1238,10 @@ function impShow(rows,name,metas,dropped){
   var doneK={};expenses.forEach(function(e){if(e.impKey&&!doneK[e.impKey])doneK[e.impKey]=e;});   // 已匯入過的帳單明細（記帳上的「帳單匯入碼」，跟著雲端同步）
   rows.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
   rows.forEach(function(r){
-    var key=r.desc.slice(0,5).toLowerCase(),f=null,ru=rules[impRk(r)];
+    var key=r.desc.slice(0,5).toLowerCase(),f=null,ru=rules[impXk(r)]||rules[impRk(r)];
     for(var i=0;i<expenses.length&&!f;i++){var e=expenses[i];if(e.type===r.type&&key.length>=2&&((e.merchant||'')+(e.note||'')+(e.name||'')).toLowerCase().indexOf(key)>=0)f=e;}
     r.cat=ru?ru.c:(f?f.cat:impDefCat(r.type));r.merchant=ru?ru.m:(r.type==='transfer'?'':impMerch(r.desc));r.on=true;
-    r.sub=(ru&&ru.s)||(!ru&&f&&f.sub)||'';if(impSubs(r.cat).indexOf(r.sub)<0)r.sub='';r.proj='';r.note=r.desc;
+    r.sub=(ru&&ru.s)||(!ru&&f&&f.sub)||'';if(impSubs(r.cat).indexOf(r.sub)<0)r.sub='';r.proj='';r.note=(ru&&ru.n)||r.desc;   // 學過的名稱（你上次改的）優先
     r.excl=r.type==='transfer'?'':impExclHit(r.desc+' '+(r.merchant||''),excl);if(r.excl)r.on=false;   // 排除名單：預設不勾
     var cs=r.c4||[],k;r.card='';r.wallet=dw;r.walAuto=false;r.mapped=false;
     for(k=0;k<cs.length;k++){var wm=impWalByCard(cs[k]);if(wm){r.card=cs[k];r.wallet=wm;r.walAuto=true;r.mapped=true;break;}}
@@ -1642,11 +1643,11 @@ document.getElementById('imp-go').addEventListener('click',function(){
     var nt0=(r.note||'').trim(),o={id:nextId++,name:nt0||(tr?'信用卡繳款':r.cat),cat:r.cat,sub:r.sub||'',wallet:tr?fr:w,date:r.date,amount:amt,currency:cur,twd:Math.round(r.twd),note:nt0,type:r.type,billEdited:false,billNote:'',merchant:(r.merchant||'').trim(),proj:r.proj||'',createdAt:Date.now()};
     if(tr){if(w&&w!==fr)o.toWallet=w;if(fr)lsSet('imp_from',fr);}
     if(r.fp)o.impKey=r.fp;expenses.unshift(o);b.add.push(o.id);n++;
-    var rk=impRk(r);if(rk)rules[rk]={c:r.cat,m:o.merchant,s:r.sub||''};
+    var rl={c:r.cat,m:o.merchant,s:r.sub||'',n:(nt0&&nt0!==r.desc)?nt0:''},rk=impRk(r),xk=impXk(r);if(rk)rules[rk]=rl;if(xk)rules[xk]=rl;   // 記住你改過的商家／名稱／分類，下次同一家店自動套用
     if(o.merchant&&merchants.indexOf(o.merchant)<0){merchants.push(o.merchant);lsSet('merchants',merchants);}
   });
   if(!n&&!mg){showToast((bk||(impRows.some(function(r){return r.lock;})&&!impRows.some(function(r){return !r.lock&&r.on;})))?'🔒 這些明細都已匯入過，沒有可匯入的項目':'⚠️ 沒有勾選任何項目');return;}
-  var rk2=Object.keys(rules);if(rk2.length>300)rk2.slice(0,rk2.length-300).forEach(function(k){delete rules[k];});
+  var rk2=Object.keys(rules);if(rk2.length>500)rk2.slice(0,rk2.length-500).forEach(function(k){delete rules[k];});
   lsSet('imp_rules',rules);var bs=lsGet('imp_batches',[]);bs.unshift(b);lsSet('imp_batches',bs.slice(0,20));
   lsSet('imp_wallet',dw);lsSet('nextId',nextId);saveAll();debouncedPush();closeOv('ov-import');refreshViews();renderImpHist();
   showUndo('✅ 已匯入 '+n+' 筆'+(mg?'、校正 '+mg+' 筆':'')+(rp?'、取代 '+rp+' 筆':'')+(bk?'；🔒 擋下 '+bk+' 筆已匯入過的':''),function(){impRevert(b);});
