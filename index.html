@@ -3851,7 +3851,7 @@ function renderReports(){
       if(rbars)rbars.innerHTML='<div style="text-align:center;padding:32px 16px;color:var(--t3)"><div style="font-size:36px;margin-bottom:8px">📭</div><div style="font-size:14px;font-weight:700">'+MONTHS[m]+' '+y+' 年無記帳記錄</div><div style="font-size:12px;margin-top:4px">試試切換其他月份</div></div>';
       if(rlegend)rlegend.innerHTML='';
       if(rcats)rcats.innerHTML='';
-      document.getElementById('rpt-summary').innerHTML='';
+      var _rs=document.getElementById('rpt-summary');if(_rs)_rs.innerHTML='';   // 此元素在函式開頭已移除，可能不存在
       return;
     }
     var rptData=buildCatMap(filtered);
