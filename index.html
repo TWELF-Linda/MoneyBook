@@ -2956,7 +2956,7 @@ function expHTML(e,noDate){
 // ── 記錄列：點一下看明細；右滑出現 編輯／複製／刪除 ───────────────
 var _swipeBlockUntil=0,_SWIPE_W=168;
 function closeSwipeRows(except){document.querySelectorAll('.eiw.open').forEach(function(w){if(w!==except)w.classList.remove('open');});}
-document.addEventListener('pointerdown',function(ev){if(!ev.target.closest||!ev.target.closest('.eiw'))closeSwipeRows(null);},true);
+['touchstart','mousedown'].forEach(function(t){document.addEventListener(t,function(ev){if(!ev.target.closest||!ev.target.closest('.eiw'))closeSwipeRows(null);},true);});
 function bindExpClicks(container){
   container.querySelectorAll('.eiw').forEach(function(w){
     var ei=w.querySelector('.ei');if(!ei)return;
@@ -2971,25 +2971,25 @@ function bindExpClicks(container){
       else if(ev.key==='ArrowRight'){ev.preventDefault();closeSwipeRows(w);w.classList.add('open');}
       else if(ev.key==='ArrowLeft'||ev.key==='Escape'){w.classList.remove('open');}
     });
-    ei.addEventListener('pointerdown',function(ev){
-      if(ev.pointerType==='mouse'&&ev.button!==0)return;
-      tracking=true;dragging=false;sx=ev.clientX;sy=ev.clientY;pid=ev.pointerId;
+    function startSwipe(x,y){
+      tracking=true;dragging=false;sx=x;sy=y;
       so=w.classList.contains('open')?_SWIPE_W:0;off=so;
       closeSwipeRows(w);
-    });
-    ei.addEventListener('pointermove',function(ev){
-      if(!tracking||ev.pointerId!==pid)return;
-      var dx=ev.clientX-sx,dy=ev.clientY-sy;
+    }
+    function moveSwipe(x,y,ev){
+      if(!tracking)return;
+      var dx=x-sx,dy=y-sy;
       if(!dragging){
         if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){tracking=false;return;}          // 上下滑＝捲動頁面
-        if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.5){dragging=true;w.classList.add('drag');try{ei.setPointerCapture(pid);}catch(_e){}}
+        if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.2){dragging=true;w.classList.add('drag');}
         else return;
       }
+      if(ev&&ev.cancelable)ev.preventDefault();
       off=Math.max(0,Math.min(_SWIPE_W+24,so+dx));
       ei.style.transform='translateX('+off+'px)';
-    });
-    function endSwipe(ev){
-      if(!tracking||(ev&&ev.pointerId!==pid))return;
+    }
+    function endSwipe(){
+      if(!tracking)return;
       tracking=false;
       if(!dragging)return;
       dragging=false;
@@ -2997,7 +2997,15 @@ function bindExpClicks(container){
       w.classList.toggle('open',so?off>_SWIPE_W*0.6:off>_SWIPE_W*0.4);
       _swipeBlockUntil=Date.now()+350;
     }
-    ei.addEventListener('pointerup',endSwipe);ei.addEventListener('pointercancel',endSwipe);
+    // 手機：touch 事件（iOS Safari 最穩）
+    ei.addEventListener('touchstart',function(ev){if(ev.touches.length!==1)return;startSwipe(ev.touches[0].clientX,ev.touches[0].clientY);},{passive:true});
+    ei.addEventListener('touchmove',function(ev){if(ev.touches.length!==1)return;moveSwipe(ev.touches[0].clientX,ev.touches[0].clientY,ev);},{passive:false});
+    ei.addEventListener('touchend',endSwipe);ei.addEventListener('touchcancel',endSwipe);
+    // 電腦：滑鼠拖曳
+    var mouseDown=false;
+    ei.addEventListener('mousedown',function(ev){if(ev.button!==0)return;mouseDown=true;startSwipe(ev.clientX,ev.clientY);});
+    window.addEventListener('mousemove',function(ev){if(mouseDown)moveSwipe(ev.clientX,ev.clientY,ev);});
+    window.addEventListener('mouseup',function(){if(mouseDown){mouseDown=false;endSwipe();}});
   });
   container.querySelectorAll('.eact button').forEach(function(b){
     b.addEventListener('click',function(ev){
